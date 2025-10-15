@@ -98,7 +98,7 @@ router.LoadHTMLGlob("templates/*")
 			// Localhost development - expanded for React Native and web development
 			"http://localhost:3000",
 			"http://localhost:3001",
-			"http://localhost:8080",
+			"https://chama-backend-server.vercel.app",
 			"http://localhost:8081",
 			"http://localhost:8082",
 			"http://localhost:19006",
