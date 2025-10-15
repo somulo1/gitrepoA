@@ -126,6 +126,7 @@ router.LoadHTMLGlob("templates/*")
 			"https://127.0.0.1:19006",
 			"https://127.0.0.1:19007",
 			"https://chama-backend-server.vercel.app",
+			"http://localhost:8081", // React Native web development
 			"http://dqtl6f-ip-41-139-130-223.tunnelmole.net",
 			// Tunnel URLs (update these with your current tunnel URLs)
 			"https://dqtl6f-ip-41-139-130-223.tunnelmole.net",
