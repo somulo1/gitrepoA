@@ -125,7 +125,7 @@ router.LoadHTMLGlob("templates/*")
 			"https://127.0.0.1:8082",
 			"https://127.0.0.1:19006",
 			"https://127.0.0.1:19007",
-			"https://tnlrgb-ip-41-72-200-10.tunnelmole.net",
+			"https://chama-backend-server.vercel.app",
 			"http://dqtl6f-ip-41-139-130-223.tunnelmole.net",
 			// Tunnel URLs (update these with your current tunnel URLs)
 			"https://dqtl6f-ip-41-139-130-223.tunnelmole.net",
