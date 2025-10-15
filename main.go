@@ -105,7 +105,7 @@ router.LoadHTMLGlob("templates/*")
 			"http://localhost:19007",
 			"http://127.0.0.1:3000",
 			"http://127.0.0.1:3001",
-			"http://127.0.0.1:8080",
+			"https://chama-backend-server.vercel.app",
 			"http://127.0.0.1:8081",
 			"http://127.0.0.1:8082",
 			"http://127.0.0.1:19006",
@@ -113,7 +113,7 @@ router.LoadHTMLGlob("templates/*")
 			// HTTPS versions for localhost (in case of redirects)
 			"https://localhost:3000",
 			"https://localhost:3001",
-			"https://localhost:8080",
+			"https://https://chama-backend-server.vercel.app",
 			"https://localhost:8081",
 			"https://localhost:8082",
 			"https://localhost:19006",
@@ -159,6 +159,13 @@ router.LoadHTMLGlob("templates/*")
 		// Handle preflight OPTIONS requests
 		if c.Request.Method == "OPTIONS" {
 			log.Printf("🔒 CORS: Handling OPTIONS preflight for %s", path)
+			// Set CORS headers for OPTIONS requests
+			c.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			c.Header().Set("Access-Control-Allow-Credentials", "false")
+			c.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token, X-File-Name, X-File-Size, X-Timezone, X-Language, X-Screen-Resolution, X-Device-Type, X-Device-Name, X-Browser-Name, X-OS-Name, X-Connection-Type")
+			c.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+			c.Header().Set("Access-Control-Expose-Headers", "Content-Length, Authorization, Content-Disposition")
+			c.Header().Set("Access-Control-Max-Age", "86400")
 			c.AbortWithStatus(204)
 			return
 		}
