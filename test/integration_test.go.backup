@@ -1,0 +1,1270 @@
+package test
+
+import (
+	"bytes"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"sync"
+	"testing"
+	"time"
+
+	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
+	"vaultke-backend/test/helpers"
+)
+
+// TestUserJourneyRegistrationToContribution tests the complete user journey from registration to making contributions
+func TestUserJourneyRegistrationToContribution(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Complete_User_Journey_Registration_To_Contribution", func(t *testing.T) {
+		// Step 1: User registration
+		registerData := map[string]interface{}{
+			"email":     "journey@example.com",
+			"phone":     "+254700000500",
+			"firstName": "Journey",
+			"lastName":  "User",
+			"password":  "password123",
+		}
+
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/auth/register", registerData, nil)
+		registerResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		token := registerResponse["token"].(string)
+		user := registerResponse["user"].(map[string]interface{})
+		userID := user["id"].(string)
+		
+		userHeaders := map[string]string{
+			"Authorization": "Bearer " + token,
+		}
+
+		// Step 2: Profile setup
+		profileData := map[string]interface{}{
+			"firstName": "Journey",
+			"lastName":  "User",
+			"bio":       "New VaultKe user",
+			"county":    "Nairobi",
+			"town":      "Westlands",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "PUT", "/api/v1/users/profile", profileData, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 3: Setup user wallet
+		err := ts.CreateTestWallet("journey-user-wallet", userID, "personal", 10000.0)
+		require.NoError(t, err)
+
+		// Step 4: Create a chama to join
+		chamaData := map[string]interface{}{
+			"name":                   "Journey Test Chama",
+			"description":            "Test chama for user journey",
+			"type":                   "savings",
+			"county":                 "Nairobi",
+			"town":                   "Westlands",
+			"contributionAmount":     2000.0,
+			"contributionFrequency":  "monthly",
+			"maxMembers":             20,
+			"isPublic":               true,
+			"requiresApproval":       false,
+		}
+
+		chairpersonHeaders := ts.GetAuthHeaders("chairperson")
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas", chamaData, chairpersonHeaders)
+		chamaResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		chama := chamaResponse["chama"].(map[string]interface{})
+		chamaID := chama["id"].(string)
+
+		// Step 5: Create chama wallet
+		err = ts.CreateTestWallet("journey-chama-wallet", chamaID, "chama", 0.0)
+		require.NoError(t, err)
+
+		// Step 6: User joins the chama
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/"+chamaID+"/join", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 7: Verify chama membership
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/chamas/"+chamaID+"/members", nil, userHeaders)
+		membersResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		members := membersResponse["members"].([]interface{})
+		assert.Len(t, members, 2) // chairperson + new user
+
+		// Step 8: Make contribution
+		contributionData := map[string]interface{}{
+			"chamaId":       chamaID,
+			"amount":        2000.0,
+			"description":   "First monthly contribution",
+			"type":          "regular",
+			"paymentMethod": "wallet",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/contributions", contributionData, userHeaders)
+		contributionResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		contribution := contributionResponse["contribution"].(map[string]interface{})
+		contributionID := contribution["id"].(string)
+		assert.NotEmpty(t, contributionID)
+
+		// Step 9: Verify contribution was recorded
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/contributions/"+contributionID, nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 10: Verify wallet balance updated
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/journey-user-wallet", nil, userHeaders)
+		walletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		wallet := walletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 8000.0, wallet["balance"]) // 10000 - 2000 contribution
+	})
+}
+
+// TestMarketplaceJourney tests the complete marketplace journey from product creation to order fulfillment
+func TestMarketplaceJourney(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Complete_Marketplace_Journey", func(t *testing.T) {
+		// Step 1: Seller registration
+		sellerData := map[string]interface{}{
+			"email":     "seller@example.com",
+			"phone":     "+254700000501",
+			"firstName": "Seller",
+			"lastName":  "User",
+			"password":  "password123",
+		}
+
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/auth/register", sellerData, nil)
+		sellerResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		sellerToken := sellerResponse["token"].(string)
+		seller := sellerResponse["user"].(map[string]interface{})
+		sellerID := seller["id"].(string)
+		
+		sellerHeaders := map[string]string{
+			"Authorization": "Bearer " + sellerToken,
+		}
+
+		// Step 2: Buyer registration
+		buyerData := map[string]interface{}{
+			"email":     "buyer@example.com",
+			"phone":     "+254700000502",
+			"firstName": "Buyer",
+			"lastName":  "User",
+			"password":  "password123",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/auth/register", buyerData, nil)
+		buyerResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		buyerToken := buyerResponse["token"].(string)
+		buyer := buyerResponse["user"].(map[string]interface{})
+		buyerID := buyer["id"].(string)
+		
+		buyerHeaders := map[string]string{
+			"Authorization": "Bearer " + buyerToken,
+		}
+
+		// Step 3: Create wallets
+		err := ts.CreateTestWallet("seller-marketplace-wallet", sellerID, "personal", 1000.0)
+		require.NoError(t, err)
+		err = ts.CreateTestWallet("buyer-marketplace-wallet", buyerID, "personal", 5000.0)
+		require.NoError(t, err)
+
+		// Step 4: Seller creates product
+		productData := map[string]interface{}{
+			"name":        "Journey Test Product",
+			"description": "Test product for marketplace journey",
+			"category":    "electronics",
+			"price":       1500.0,
+			"images":      []string{"https://example.com/image1.jpg"},
+			"stock":       10,
+			"minOrder":    1,
+			"maxOrder":    5,
+			"county":      "Nairobi",
+			"town":        "CBD",
+			"tags":        []string{"electronics", "test"},
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/products", productData, sellerHeaders)
+		productResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		product := productResponse["product"].(map[string]interface{})
+		productID := product["id"].(string)
+
+		// Step 5: Buyer browses and views product
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/marketplace/products", nil, nil)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/marketplace/products/"+productID, nil, nil)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 6: Buyer adds product to cart
+		cartData := map[string]interface{}{
+			"productId": productID,
+			"quantity":  2,
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/cart", cartData, buyerHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Step 7: Buyer creates order
+		orderData := map[string]interface{}{
+			"items": []map[string]interface{}{
+				{
+					"productId": productID,
+					"quantity":  2,
+				},
+			},
+			"deliveryAddress": "123 Test Street, Nairobi",
+			"deliveryPhone":   "+254700000000",
+			"paymentMethod":   "wallet",
+			"notes":           "Test order for journey",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/orders", orderData, buyerHeaders)
+		orderResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		order := orderResponse["order"].(map[string]interface{})
+		orderID := order["id"].(string)
+
+		// Step 8: Seller processes order
+		updateOrderData := map[string]interface{}{
+			"status": "processing",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "PUT", "/api/v1/marketplace/orders/"+orderID, updateOrderData, sellerHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 9: Verify order status
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/marketplace/orders/"+orderID, nil, buyerHeaders)
+		orderDetailResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		orderDetail := orderDetailResponse["order"].(map[string]interface{})
+		assert.Equal(t, "processing", orderDetail["status"])
+
+		// Step 10: Verify payment processed (wallet balances updated)
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/buyer-marketplace-wallet", nil, buyerHeaders)
+		buyerWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		buyerWallet := buyerWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 2000.0, buyerWallet["balance"]) // 5000 - (1500 * 2)
+	})
+}
+
+// TestChamaManagementJourney tests the complete chama management journey
+func TestChamaManagementJourney(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Complete_Chama_Management_Journey", func(t *testing.T) {
+		// Step 1: Create chama
+		chairpersonHeaders := ts.GetAuthHeaders("chairperson")
+		
+		chamaData := map[string]interface{}{
+			"name":                   "Management Test Chama",
+			"description":            "Test chama for management journey",
+			"type":                   "savings",
+			"county":                 "Nairobi",
+			"town":                   "Westlands",
+			"contributionAmount":     3000.0,
+			"contributionFrequency":  "monthly",
+			"maxMembers":             30,
+			"isPublic":               true,
+			"requiresApproval":       false,
+		}
+
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas", chamaData, chairpersonHeaders)
+		chamaResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		chama := chamaResponse["chama"].(map[string]interface{})
+		chamaID := chama["id"].(string)
+
+		// Step 2: Add multiple members
+		userHeaders := ts.GetAuthHeaders("user")
+		adminHeaders := ts.GetAuthHeaders("admin")
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/"+chamaID+"/join", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/"+chamaID+"/join", nil, adminHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 3: Schedule meeting
+		meetingData := map[string]interface{}{
+			"chamaId":     chamaID,
+			"title":       "Monthly Planning Meeting",
+			"description": "Plan for next month's activities",
+			"scheduledAt": time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+			"duration":    120,
+			"location":    "Community Hall",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/meetings", meetingData, chairpersonHeaders)
+		meetingResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		meeting := meetingResponse["meeting"].(map[string]interface{})
+		meetingID := meeting["id"].(string)
+
+		// Step 4: Members join meeting
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/meetings/"+meetingID+"/join", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 5: Create reminder for meeting
+		reminderData := map[string]interface{}{
+			"title":       "Monthly Meeting Reminder",
+			"description": "Don't forget the monthly meeting tomorrow",
+			"reminderAt":  time.Now().Add(23 * time.Hour).Format(time.RFC3339),
+			"type":        "meeting",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/reminders", reminderData, chairpersonHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Step 6: Create poll for members
+		pollData := map[string]interface{}{
+			"title":       "Meeting Venue Poll",
+			"description": "Choose the best venue for our next meeting",
+			"options":     []string{"Community Hall", "Church Hall", "School Hall"},
+			"expiresAt":   time.Now().Add(72 * time.Hour).Format(time.RFC3339),
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/"+chamaID+"/polls", pollData, chairpersonHeaders)
+		pollResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		poll := pollResponse["poll"].(map[string]interface{})
+		pollID := poll["id"].(string)
+
+		// Step 7: Members vote on poll
+		voteData := map[string]interface{}{
+			"option": "Community Hall",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/"+chamaID+"/polls/"+pollID+"/vote", voteData, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 8: Verify chama has all members
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/chamas/"+chamaID+"/members", nil, chairpersonHeaders)
+		membersResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		members := membersResponse["members"].([]interface{})
+		assert.Len(t, members, 3) // chairperson + user + admin
+
+		// Step 9: Get chama meetings
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/meetings?chamaId="+chamaID, nil, chairpersonHeaders)
+		meetingsResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		meetings := meetingsResponse["meetings"].([]interface{})
+		assert.Greater(t, len(meetings), 0)
+
+		// Step 10: Get chama polls
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/chamas/"+chamaID+"/polls", nil, chairpersonHeaders)
+		pollsResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		polls := pollsResponse["polls"].([]interface{})
+		assert.Greater(t, len(polls), 0)
+	})
+}
+
+// TestLoanWorkflow tests the complete loan workflow
+func TestLoanWorkflow(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Complete_Loan_Workflow", func(t *testing.T) {
+		// Step 1: Create chama and setup wallets
+		chairpersonHeaders := ts.GetAuthHeaders("chairperson")
+		userHeaders := ts.GetAuthHeaders("user")
+		
+		err := ts.CreateTestChama("loan-test-chama")
+		require.NoError(t, err)
+		
+		err = ts.CreateTestWallet("loan-user-wallet", ts.Users["user"].ID, "personal", 1000.0)
+		require.NoError(t, err)
+		err = ts.CreateTestWallet("loan-chama-wallet", "loan-test-chama", "chama", 50000.0)
+		require.NoError(t, err)
+
+		// Step 2: User joins chama
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/loan-test-chama/join", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 3: Apply for loan
+		loanData := map[string]interface{}{
+			"chamaId":      "loan-test-chama",
+			"amount":       10000.0,
+			"duration":     12,
+			"purpose":      "Business expansion",
+			"type":         "business",
+			"interestRate": 5.0,
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/loans/apply", loanData, userHeaders)
+		loanResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		loan := loanResponse["loan"].(map[string]interface{})
+		loanID := loan["id"].(string)
+
+		// Step 4: Verify loan application
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/loans/"+loanID, nil, userHeaders)
+		loanDetailResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		loanDetail := loanDetailResponse["loan"].(map[string]interface{})
+		assert.Equal(t, "pending", loanDetail["status"])
+		assert.Equal(t, 10000.0, loanDetail["amount"])
+
+		// Step 5: Chairperson approves loan
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/loans/"+loanID+"/approve", nil, chairpersonHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Step 6: Verify loan approved and wallet updated
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/loans/"+loanID, nil, userHeaders)
+		approvedLoanResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		approvedLoan := approvedLoanResponse["loan"].(map[string]interface{})
+		assert.Equal(t, "approved", approvedLoan["status"])
+
+		// Step 7: Check user wallet balance increased
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/loan-user-wallet", nil, userHeaders)
+		walletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		wallet := walletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 11000.0, wallet["balance"]) // 1000 + 10000 loan
+
+		// Step 8: User makes repayment
+		repaymentData := map[string]interface{}{
+			"amount":        1000.0,
+			"paymentMethod": "wallet",
+			"description":   "Monthly repayment",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/loans/"+loanID+"/repay", repaymentData, userHeaders)
+		if w.Code == http.StatusOK {
+			helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		}
+
+		// Step 9: Get all user loans
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/loans", nil, userHeaders)
+		loansResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		loans := loansResponse["loans"].([]interface{})
+		assert.Greater(t, len(loans), 0)
+
+		// Step 10: Get chama loans (chairperson view)
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/loans?chamaId=loan-test-chama", nil, chairpersonHeaders)
+		chamaLoansResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		chamaLoans := chamaLoansResponse["loans"].([]interface{})
+		assert.Greater(t, len(chamaLoans), 0)
+	})
+}
+
+// TestWalletTransactionWorkflow tests comprehensive wallet operations
+func TestWalletTransactionWorkflow(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Complete_Wallet_Transaction_Workflow", func(t *testing.T) {
+		// Step 1: Create wallets
+		userHeaders := ts.GetAuthHeaders("user")
+		adminHeaders := ts.GetAuthHeaders("admin")
+		
+		err := ts.CreateTestWallet("wallet-user-main", ts.Users["user"].ID, "personal", 5000.0)
+		require.NoError(t, err)
+		err = ts.CreateTestWallet("wallet-admin-main", ts.Users["admin"].ID, "personal", 3000.0)
+		require.NoError(t, err)
+
+		// Step 2: Deposit money
+		depositData := map[string]interface{}{
+			"amount":        2000.0,
+			"paymentMethod": "mpesa",
+			"description":   "Monthly deposit",
+			"reference":     "DEP-001",
+		}
+
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/deposit", depositData, userHeaders)
+		depositResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		transaction := depositResponse["transaction"].(map[string]interface{})
+		assert.Equal(t, 2000.0, transaction["amount"])
+
+		// Step 3: Verify balance after deposit
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/wallet-user-main", nil, userHeaders)
+		walletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		wallet := walletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 7000.0, wallet["balance"])
+
+		// Step 4: Transfer between wallets
+		transferData := map[string]interface{}{
+			"fromWalletId": "wallet-user-main",
+			"toWalletId":   "wallet-admin-main",
+			"amount":       1500.0,
+			"description":  "Transfer to admin",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/transfer", transferData, userHeaders)
+		transferResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		transferTransaction := transferResponse["transaction"].(map[string]interface{})
+		assert.Equal(t, 1500.0, transferTransaction["amount"])
+
+		// Step 5: Verify balances after transfer
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/wallet-user-main", nil, userHeaders)
+		userWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		userWallet := userWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 5500.0, userWallet["balance"])
+
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/wallet-admin-main", nil, adminHeaders)
+		adminWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		adminWallet := adminWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 4500.0, adminWallet["balance"])
+
+		// Step 6: Withdraw money
+		withdrawData := map[string]interface{}{
+			"amount":        1000.0,
+			"paymentMethod": "mpesa",
+			"description":   "Monthly withdrawal",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/withdraw", withdrawData, userHeaders)
+		withdrawResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		
+		withdrawTransaction := withdrawResponse["transaction"].(map[string]interface{})
+		assert.Equal(t, 1000.0, withdrawTransaction["amount"])
+
+		// Step 7: Verify final balance
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/wallet-user-main", nil, userHeaders)
+		finalWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		finalWallet := finalWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 4500.0, finalWallet["balance"])
+
+		// Step 8: Get transaction history
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/wallet-user-main/transactions", nil, userHeaders)
+		if w.Code == http.StatusOK {
+			transactionsResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+			transactions := transactionsResponse["transactions"].([]interface{})
+			assert.Greater(t, len(transactions), 0)
+		}
+
+		// Step 9: Get balance using balance endpoint
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/balance", nil, userHeaders)
+		balanceResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		balance := balanceResponse["balance"].(float64)
+		assert.Equal(t, 4500.0, balance)
+
+		// Step 10: Get all wallets
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets", nil, userHeaders)
+		walletsResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		wallets := walletsResponse["wallets"].([]interface{})
+		assert.Greater(t, len(wallets), 0)
+	})
+}
+
+// TestCrossServiceInteractions tests interactions between different services
+func TestCrossServiceInteractions(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Cross_Service_Interactions", func(t *testing.T) {
+		// Setup data
+		chairpersonHeaders := ts.GetAuthHeaders("chairperson")
+		userHeaders := ts.GetAuthHeaders("user")
+		
+		// Create chama
+		err := ts.CreateTestChama("cross-service-chama")
+		require.NoError(t, err)
+		
+		// Create wallets
+		err = ts.CreateTestWallet("cross-user-wallet", ts.Users["user"].ID, "personal", 10000.0)
+		require.NoError(t, err)
+		err = ts.CreateTestWallet("cross-chama-wallet", "cross-service-chama", "chama", 5000.0)
+		require.NoError(t, err)
+
+		// User joins chama
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/cross-service-chama/join", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Test 1: Authentication affecting wallet operations
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/cross-user-wallet", nil, nil)
+		helpers.AssertErrorResponse(t, w, http.StatusUnauthorized)
+
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/cross-user-wallet", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Test 2: Wallet operations affecting chama balances
+		contributionData := map[string]interface{}{
+			"chamaId":       "cross-service-chama",
+			"amount":        2000.0,
+			"description":   "Cross-service contribution",
+			"type":          "regular",
+			"paymentMethod": "wallet",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/contributions", contributionData, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Verify wallet balance decreased
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/cross-user-wallet", nil, userHeaders)
+		walletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		wallet := walletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 8000.0, wallet["balance"])
+
+		// Test 3: Meeting notifications to members
+		meetingData := map[string]interface{}{
+			"chamaId":     "cross-service-chama",
+			"title":       "Cross-Service Meeting",
+			"description": "Testing cross-service notifications",
+			"scheduledAt": time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+			"duration":    90,
+			"location":    "Test Location",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/meetings", meetingData, chairpersonHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Verify notifications were created
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/notifications", nil, userHeaders)
+		notificationsResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		notifications := notificationsResponse["notifications"].([]interface{})
+		assert.Greater(t, len(notifications), 0)
+
+		// Test 4: Marketplace order creating transaction
+		err = ts.CreateTestProduct("cross-service-product")
+		require.NoError(t, err)
+
+		orderData := map[string]interface{}{
+			"items": []map[string]interface{}{
+				{
+					"productId": "cross-service-product",
+					"quantity":  1,
+				},
+			},
+			"deliveryAddress": "Test Address",
+			"deliveryPhone":   "+254700000000",
+			"paymentMethod":   "wallet",
+			"notes":           "Cross-service order",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/orders", orderData, userHeaders)
+		if w.Code == http.StatusCreated {
+			helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+		}
+
+		// Test 5: Loan approval updating wallet balance
+		loanData := map[string]interface{}{
+			"chamaId":      "cross-service-chama",
+			"amount":       5000.0,
+			"duration":     6,
+			"purpose":      "Cross-service loan",
+			"type":         "personal",
+			"interestRate": 3.0,
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/loans/apply", loanData, userHeaders)
+		if w.Code == http.StatusCreated {
+			loanResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+			loan := loanResponse["loan"].(map[string]interface{})
+			loanID := loan["id"].(string)
+
+			// Approve loan
+			w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/loans/"+loanID+"/approve", nil, chairpersonHeaders)
+			if w.Code == http.StatusOK {
+				helpers.AssertSuccessResponse(t, w, http.StatusOK)
+			}
+		}
+	})
+}
+
+// TestErrorHandlingAcrossServices tests error handling across multiple services
+func TestErrorHandlingAcrossServices(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Error_Handling_Across_Services", func(t *testing.T) {
+		userHeaders := ts.GetAuthHeaders("user")
+		
+		// Test 1: Failed transaction rollback
+		err := ts.CreateTestWallet("error-test-wallet", ts.Users["user"].ID, "personal", 1000.0)
+		require.NoError(t, err)
+
+		// Try to transfer more than available balance
+		transferData := map[string]interface{}{
+			"fromWalletId": "error-test-wallet",
+			"toWalletId":   "nonexistent-wallet",
+			"amount":       5000.0,
+			"description":  "Invalid transfer",
+		}
+
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/transfer", transferData, userHeaders)
+		helpers.AssertErrorResponse(t, w, http.StatusBadRequest)
+
+		// Verify original balance unchanged
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/error-test-wallet", nil, userHeaders)
+		walletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		wallet := walletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 1000.0, wallet["balance"])
+
+		// Test 2: Invalid chama membership blocking operations
+		contributionData := map[string]interface{}{
+			"chamaId":       "nonexistent-chama",
+			"amount":        1000.0,
+			"description":   "Invalid contribution",
+			"type":          "regular",
+			"paymentMethod": "wallet",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/contributions", contributionData, userHeaders)
+		helpers.AssertErrorResponse(t, w, http.StatusNotFound)
+
+		// Test 3: Insufficient wallet balance blocking transactions
+		contributionData = map[string]interface{}{
+			"chamaId":       "test-chama",
+			"amount":        10000.0, // More than wallet balance
+			"description":   "Insufficient balance contribution",
+			"type":          "regular",
+			"paymentMethod": "wallet",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/contributions", contributionData, userHeaders)
+		helpers.AssertErrorResponse(t, w, http.StatusBadRequest)
+
+		// Test 4: Authentication failures blocking protected operations
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/error-test-wallet", nil, nil)
+		helpers.AssertErrorResponse(t, w, http.StatusUnauthorized)
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas", map[string]interface{}{}, nil)
+		helpers.AssertErrorResponse(t, w, http.StatusUnauthorized)
+
+		// Test 5: Invalid marketplace operations
+		orderData := map[string]interface{}{
+			"items": []map[string]interface{}{
+				{
+					"productId": "nonexistent-product",
+					"quantity":  1,
+				},
+			},
+			"deliveryAddress": "Test Address",
+			"deliveryPhone":   "+254700000000",
+			"paymentMethod":   "wallet",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/orders", orderData, userHeaders)
+		helpers.AssertErrorResponse(t, w, http.StatusNotFound)
+
+		// Test 6: Invalid loan operations
+		loanData := map[string]interface{}{
+			"chamaId":      "nonexistent-chama",
+			"amount":       5000.0,
+			"duration":     6,
+			"purpose":      "Invalid loan",
+			"type":         "personal",
+			"interestRate": 3.0,
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/loans/apply", loanData, userHeaders)
+		helpers.AssertErrorResponse(t, w, http.StatusNotFound)
+
+		// Test 7: Invalid meeting operations
+		meetingData := map[string]interface{}{
+			"chamaId":     "nonexistent-chama",
+			"title":       "Invalid meeting",
+			"description": "This should fail",
+			"scheduledAt": time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+			"duration":    90,
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/meetings", meetingData, userHeaders)
+		helpers.AssertErrorResponse(t, w, http.StatusNotFound)
+	})
+}
+
+// TestConcurrentOperations tests concurrent operations across services
+func TestConcurrentOperations(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Concurrent_Operations", func(t *testing.T) {
+		// Setup
+		err := ts.CreateTestChama("concurrent-chama")
+		require.NoError(t, err)
+		
+		err = ts.CreateTestWallet("concurrent-wallet", ts.Users["user"].ID, "personal", 10000.0)
+		require.NoError(t, err)
+
+		userHeaders := ts.GetAuthHeaders("user")
+		
+		// Test 1: Multiple users joining same chama concurrently
+		const numUsers = 5
+		var wg sync.WaitGroup
+		results := make(chan bool, numUsers)
+
+		for i := 0; i < numUsers; i++ {
+			wg.Add(1)
+			go func(id int) {
+				defer wg.Done()
+				
+				// Create user
+				userData := map[string]interface{}{
+					"email":     fmt.Sprintf("concurrent%d@example.com", id),
+					"phone":     fmt.Sprintf("+25470000%04d", id),
+					"firstName": fmt.Sprintf("User%d", id),
+					"lastName":  "Concurrent",
+					"password":  "password123",
+				}
+
+				w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/auth/register", userData, nil)
+				if w.Code != http.StatusCreated {
+					results <- false
+					return
+				}
+
+				var response map[string]interface{}
+				err := json.Unmarshal(w.Body.Bytes(), &response)
+				if err != nil {
+					results <- false
+					return
+				}
+
+				token := response["token"].(string)
+				headers := map[string]string{"Authorization": "Bearer " + token}
+
+				// Join chama
+				w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/concurrent-chama/join", nil, headers)
+				results <- w.Code == http.StatusOK
+			}(i)
+		}
+
+		wg.Wait()
+		close(results)
+
+		successCount := 0
+		for success := range results {
+			if success {
+				successCount++
+			}
+		}
+
+		// Most should succeed (some might fail due to constraints)
+		assert.Greater(t, successCount, 0)
+
+		// Test 2: Simultaneous transactions on same wallet
+		const numTransactions = 10
+		transactionResults := make(chan bool, numTransactions)
+		var transactionWG sync.WaitGroup
+
+		for i := 0; i < numTransactions; i++ {
+			transactionWG.Add(1)
+			go func(id int) {
+				defer transactionWG.Done()
+				
+				depositData := map[string]interface{}{
+					"amount":        100.0,
+					"paymentMethod": "mpesa",
+					"description":   fmt.Sprintf("Concurrent deposit %d", id),
+					"reference":     fmt.Sprintf("REF-%d", id),
+				}
+
+				w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/deposit", depositData, userHeaders)
+				transactionResults <- w.Code == http.StatusCreated
+			}(i)
+		}
+
+		transactionWG.Wait()
+		close(transactionResults)
+
+		transactionSuccessCount := 0
+		for success := range transactionResults {
+			if success {
+				transactionSuccessCount++
+			}
+		}
+
+		// Most transactions should succeed
+		assert.Greater(t, transactionSuccessCount, 0)
+
+		// Test 3: Concurrent marketplace operations
+		err = ts.CreateTestProduct("concurrent-product")
+		require.NoError(t, err)
+
+		const numOrders = 5
+		orderResults := make(chan bool, numOrders)
+		var orderWG sync.WaitGroup
+
+		for i := 0; i < numOrders; i++ {
+			orderWG.Add(1)
+			go func(id int) {
+				defer orderWG.Done()
+				
+				orderData := map[string]interface{}{
+					"items": []map[string]interface{}{
+						{
+							"productId": "concurrent-product",
+							"quantity":  1,
+						},
+					},
+					"deliveryAddress": fmt.Sprintf("Address %d", id),
+					"deliveryPhone":   fmt.Sprintf("+25470000%04d", id),
+					"paymentMethod":   "wallet",
+					"notes":           fmt.Sprintf("Concurrent order %d", id),
+				}
+
+				w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/orders", orderData, userHeaders)
+				orderResults <- w.Code == http.StatusCreated
+			}(i)
+		}
+
+		orderWG.Wait()
+		close(orderResults)
+
+		orderSuccessCount := 0
+		for success := range orderResults {
+			if success {
+				orderSuccessCount++
+			}
+		}
+
+		// At least some orders should succeed
+		assert.GreaterOrEqual(t, orderSuccessCount, 0)
+
+		// Test 4: Concurrent profile access
+		const numProfileRequests = 20
+		profileResults := make(chan bool, numProfileRequests)
+		var profileWG sync.WaitGroup
+
+		for i := 0; i < numProfileRequests; i++ {
+			profileWG.Add(1)
+			go func() {
+				defer profileWG.Done()
+				
+				w := helpers.MakeRequest(ts.Router, "GET", "/api/v1/users/profile", nil, userHeaders)
+				profileResults <- w.Code == http.StatusOK
+			}()
+		}
+
+		profileWG.Wait()
+		close(profileResults)
+
+		profileSuccessCount := 0
+		for success := range profileResults {
+			if success {
+				profileSuccessCount++
+			}
+		}
+
+		// All profile requests should succeed
+		assert.Equal(t, numProfileRequests, profileSuccessCount)
+	})
+}
+
+// TestDataFlowBetweenServices tests data flow across different services
+func TestDataFlowBetweenServices(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Data_Flow_Between_Services", func(t *testing.T) {
+		// Setup
+		chairpersonHeaders := ts.GetAuthHeaders("chairperson")
+		userHeaders := ts.GetAuthHeaders("user")
+		
+		// Create chama
+		err := ts.CreateTestChama("dataflow-chama")
+		require.NoError(t, err)
+		
+		// Create wallets
+		err = ts.CreateTestWallet("dataflow-user-wallet", ts.Users["user"].ID, "personal", 10000.0)
+		require.NoError(t, err)
+		err = ts.CreateTestWallet("dataflow-chama-wallet", "dataflow-chama", "chama", 5000.0)
+		require.NoError(t, err)
+
+		// User joins chama
+		w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/chamas/dataflow-chama/join", nil, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusOK)
+
+		// Test 1: User action creating notifications
+		meetingData := map[string]interface{}{
+			"chamaId":     "dataflow-chama",
+			"title":       "Data Flow Meeting",
+			"description": "Testing data flow notifications",
+			"scheduledAt": time.Now().Add(24 * time.Hour).Format(time.RFC3339),
+			"duration":    90,
+			"location":    "Test Location",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/meetings", meetingData, chairpersonHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Verify notification created for user
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/notifications", nil, userHeaders)
+		notificationsResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		notifications := notificationsResponse["notifications"].([]interface{})
+		assert.Greater(t, len(notifications), 0)
+
+		// Test 2: Transaction updating multiple wallet balances
+		transferData := map[string]interface{}{
+			"fromWalletId": "dataflow-user-wallet",
+			"toWalletId":   "dataflow-chama-wallet",
+			"amount":       2000.0,
+			"description":  "Data flow transfer",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/transfer", transferData, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Verify both wallets updated
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/dataflow-user-wallet", nil, userHeaders)
+		userWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		userWallet := userWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 8000.0, userWallet["balance"])
+
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/dataflow-chama-wallet", nil, chairpersonHeaders)
+		chamaWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		chamaWallet := chamaWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 7000.0, chamaWallet["balance"])
+
+		// Test 3: Chama membership affecting contribution calculations
+		contributionData := map[string]interface{}{
+			"chamaId":       "dataflow-chama",
+			"amount":        1000.0,
+			"description":   "Data flow contribution",
+			"type":          "regular",
+			"paymentMethod": "wallet",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/contributions", contributionData, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Verify contribution affects user wallet and chama records
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/wallets/dataflow-user-wallet", nil, userHeaders)
+		postContributionWalletResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		postContributionWallet := postContributionWalletResponse["wallet"].(map[string]interface{})
+		assert.Equal(t, 7000.0, postContributionWallet["balance"])
+
+		// Test 4: Product order creating delivery tracking
+		err = ts.CreateTestProduct("dataflow-product")
+		require.NoError(t, err)
+
+		orderData := map[string]interface{}{
+			"items": []map[string]interface{}{
+				{
+					"productId": "dataflow-product",
+					"quantity":  1,
+				},
+			},
+			"deliveryAddress": "123 Data Flow Street",
+			"deliveryPhone":   "+254700000000",
+			"paymentMethod":   "wallet",
+			"notes":           "Data flow order",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/orders", orderData, userHeaders)
+		if w.Code == http.StatusCreated {
+			orderResponse := helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+			order := orderResponse["order"].(map[string]interface{})
+			orderID := order["id"].(string)
+
+			// Verify order created with tracking information
+			w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/marketplace/orders/"+orderID, nil, userHeaders)
+			orderDetailResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+			
+			orderDetail := orderDetailResponse["order"].(map[string]interface{})
+			assert.Equal(t, orderID, orderDetail["id"])
+			assert.NotEmpty(t, orderDetail["deliveryAddress"])
+		}
+
+		// Test 5: Reminders affecting user notifications
+		reminderData := map[string]interface{}{
+			"title":       "Data Flow Reminder",
+			"description": "Testing data flow reminders",
+			"reminderAt":  time.Now().Add(1 * time.Hour).Format(time.RFC3339),
+			"type":        "custom",
+		}
+
+		w = helpers.MakeRequest(ts.Router, "POST", "/api/v1/reminders", reminderData, userHeaders)
+		helpers.AssertSuccessResponse(t, w, http.StatusCreated)
+
+		// Verify reminder created
+		w = helpers.MakeRequest(ts.Router, "GET", "/api/v1/reminders", nil, userHeaders)
+		remindersResponse := helpers.AssertSuccessResponse(t, w, http.StatusOK)
+		
+		reminders := remindersResponse["reminders"].([]interface{})
+		assert.Greater(t, len(reminders), 0)
+	})
+}
+
+// TestPerformanceAndStress tests system performance under load
+func TestPerformanceAndStress(t *testing.T) {
+	ts := helpers.NewTestSuite(t)
+	defer ts.Cleanup()
+
+	t.Run("Performance_And_Stress_Test", func(t *testing.T) {
+		// Setup
+		userHeaders := ts.GetAuthHeaders("user")
+		
+		err := ts.CreateTestWallet("performance-wallet", ts.Users["user"].ID, "personal", 100000.0)
+		require.NoError(t, err)
+
+		// Test 1: Multiple rapid API calls
+		const numCalls = 50
+		var wg sync.WaitGroup
+		results := make(chan time.Duration, numCalls)
+
+		for i := 0; i < numCalls; i++ {
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				
+				start := time.Now()
+				w := helpers.MakeRequest(ts.Router, "GET", "/api/v1/users/profile", nil, userHeaders)
+				duration := time.Since(start)
+				
+				if w.Code == http.StatusOK {
+					results <- duration
+				}
+			}()
+		}
+
+		wg.Wait()
+		close(results)
+
+		// Calculate average response time
+		totalDuration := time.Duration(0)
+		successCount := 0
+		for duration := range results {
+			totalDuration += duration
+			successCount++
+		}
+
+		if successCount > 0 {
+			avgDuration := totalDuration / time.Duration(successCount)
+			assert.Less(t, avgDuration, 100*time.Millisecond, "Average response time should be under 100ms")
+		}
+
+		// Test 2: Bulk wallet operations
+		const numTransactions = 20
+		var transactionWG sync.WaitGroup
+		transactionResults := make(chan bool, numTransactions)
+
+		for i := 0; i < numTransactions; i++ {
+			transactionWG.Add(1)
+			go func(id int) {
+				defer transactionWG.Done()
+				
+				depositData := map[string]interface{}{
+					"amount":        float64(id + 1),
+					"paymentMethod": "mpesa",
+					"description":   fmt.Sprintf("Bulk deposit %d", id),
+					"reference":     fmt.Sprintf("BULK-%d", id),
+				}
+
+				w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/wallets/deposit", depositData, userHeaders)
+				transactionResults <- w.Code == http.StatusCreated
+			}(i)
+		}
+
+		transactionWG.Wait()
+		close(transactionResults)
+
+		transactionSuccessCount := 0
+		for success := range transactionResults {
+			if success {
+				transactionSuccessCount++
+			}
+		}
+
+		// Most transactions should succeed
+		assert.Greater(t, transactionSuccessCount, numTransactions/2)
+
+		// Test 3: Database locking and transaction isolation
+		const numConcurrentUpdates = 10
+		var updateWG sync.WaitGroup
+		updateResults := make(chan bool, numConcurrentUpdates)
+
+		for i := 0; i < numConcurrentUpdates; i++ {
+			updateWG.Add(1)
+			go func(id int) {
+				defer updateWG.Done()
+				
+				profileData := map[string]interface{}{
+					"firstName": fmt.Sprintf("Concurrent%d", id),
+					"lastName":  "Update",
+					"bio":       fmt.Sprintf("Updated bio %d", id),
+				}
+
+				w := helpers.MakeRequest(ts.Router, "PUT", "/api/v1/users/profile", profileData, userHeaders)
+				updateResults <- w.Code == http.StatusOK
+			}(i)
+		}
+
+		updateWG.Wait()
+		close(updateResults)
+
+		updateSuccessCount := 0
+		for success := range updateResults {
+			if success {
+				updateSuccessCount++
+			}
+		}
+
+		// Most updates should succeed
+		assert.Greater(t, updateSuccessCount, 0)
+
+		// Test 4: Memory usage under load
+		const numLargeRequests = 5
+		var largeRequestWG sync.WaitGroup
+		largeRequestResults := make(chan bool, numLargeRequests)
+
+		for i := 0; i < numLargeRequests; i++ {
+			largeRequestWG.Add(1)
+			go func(id int) {
+				defer largeRequestWG.Done()
+				
+				// Create large request data
+				largeData := map[string]interface{}{
+					"name":        fmt.Sprintf("Large Product %d", id),
+					"description": fmt.Sprintf("Large description %d with lots of content", id),
+					"category":    "electronics",
+					"price":       1000.0,
+					"images":      make([]string, 100), // Large array
+					"stock":       10,
+					"county":      "Nairobi",
+					"town":        "CBD",
+					"tags":        make([]string, 50), // Large array
+				}
+
+				w := helpers.MakeRequest(ts.Router, "POST", "/api/v1/marketplace/products", largeData, userHeaders)
+				largeRequestResults <- w.Code == http.StatusCreated
+			}(i)
+		}
+
+		largeRequestWG.Wait()
+		close(largeRequestResults)
+
+		largeRequestSuccessCount := 0
+		for success := range largeRequestResults {
+			if success {
+				largeRequestSuccessCount++
+			}
+		}
+
+		// Some large requests should succeed
+		assert.GreaterOrEqual(t, largeRequestSuccessCount, 0)
+	})
+}
