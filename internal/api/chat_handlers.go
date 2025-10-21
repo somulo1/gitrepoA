@@ -422,11 +422,11 @@ func GetChatMessages(c *gin.Context) {
 									SenderID:      getStringFromMeta(meta, "senderId", ""),
 									RecipientID:   roomID,
 									Ciphertext:    getStringFromMeta(meta, "ciphertext", ""),
-									IV:           getStringFromMeta(meta, "iv", ""),
-									AuthTag:      getStringFromMeta(meta, "authTag", ""),
-									SessionID:    roomID,
+									IV:            getStringFromMeta(meta, "iv", ""),
+									AuthTag:       getStringFromMeta(meta, "authTag", ""),
+									SessionID:     roomID,
 									MessageNumber: 0,
-									Timestamp:    time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
+									Timestamp:     time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
 									SecurityLevel: "GROUP_ENCRYPTED",
 									IntegrityHash: getStringFromMeta(meta, "integrityHash", ""),
 								}
@@ -459,11 +459,11 @@ func GetChatMessages(c *gin.Context) {
 								SenderID:      getStringFromMeta(meta, "senderId", ""),
 								RecipientID:   getStringFromMeta(meta, "recipientId", ""),
 								Ciphertext:    getStringFromMeta(meta, "ciphertext", ""),
-								IV:           getStringFromMeta(meta, "iv", ""),
-								AuthTag:      getStringFromMeta(meta, "authTag", ""),
-								SessionID:    getStringFromMeta(meta, "sessionId", ""),
+								IV:            getStringFromMeta(meta, "iv", ""),
+								AuthTag:       getStringFromMeta(meta, "authTag", ""),
+								SessionID:     getStringFromMeta(meta, "sessionId", ""),
 								MessageNumber: int64(getFloatFromMeta(meta, "messageNumber", 0)),
-								Timestamp:    time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
+								Timestamp:     time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
 								SecurityLevel: getStringFromMeta(meta, "securityLevel", "MILITARY_GRADE"),
 								IntegrityHash: getStringFromMeta(meta, "integrityHash", ""),
 							}
@@ -529,13 +529,13 @@ func SendMessage(c *gin.Context) {
 
 	// Handle regular JSON message
 	var req struct {
-		Type          string            `json:"type" binding:"required"`
-		Content       string            `json:"content" binding:"required"`
-		Metadata      json.RawMessage   `json:"metadata"`
-		ReplyToID     *string           `json:"replyToId"`
-		IsEncrypted   bool              `json:"isEncrypted"`
-		SecurityLevel string            `json:"securityLevel"`
-		RecipientID   string            `json:"recipientId"`
+		Type          string          `json:"type" binding:"required"`
+		Content       string          `json:"content" binding:"required"`
+		Metadata      json.RawMessage `json:"metadata"`
+		ReplyToID     *string         `json:"replyToId"`
+		IsEncrypted   bool            `json:"isEncrypted"`
+		SecurityLevel string          `json:"securityLevel"`
+		RecipientID   string          `json:"recipientId"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -663,15 +663,15 @@ func SendMessage(c *gin.Context) {
 			"securityLevel":   "MILITARY_GRADE",
 			"needsDecryption": true,
 			"ciphertext":      encryptedMessage.Ciphertext,
-			"iv":             encryptedMessage.IV,
-			"authTag":        encryptedMessage.AuthTag,
-			"sessionId":      encryptedMessage.SessionID,
-			"messageNumber":  encryptedMessage.MessageNumber,
-			"integrityHash":  encryptedMessage.IntegrityHash,
-			"timestamp":      encryptedMessage.Timestamp,
-			"messageId":      fmt.Sprintf("msg_%d_%s", time.Now().Unix(), userID),
-			"senderId":       userID,
-			"recipientId":    recipientID,
+			"iv":              encryptedMessage.IV,
+			"authTag":         encryptedMessage.AuthTag,
+			"sessionId":       encryptedMessage.SessionID,
+			"messageNumber":   encryptedMessage.MessageNumber,
+			"integrityHash":   encryptedMessage.IntegrityHash,
+			"timestamp":       encryptedMessage.Timestamp,
+			"messageId":       fmt.Sprintf("msg_%d_%s", time.Now().Unix(), userID),
+			"senderId":        userID,
+			"recipientId":     recipientID,
 		}
 	} else {
 		// Group chat (group, chama, support) - encrypt with group E2EE
@@ -696,14 +696,14 @@ func SendMessage(c *gin.Context) {
 			"needsDecryption": true,
 			"chatType":        string(room.Type),
 			"ciphertext":      encryptedMessage.Ciphertext,
-			"iv":             encryptedMessage.IV,
-			"authTag":        encryptedMessage.AuthTag,
-			"sessionId":      encryptedMessage.SessionID,
-			"integrityHash":  encryptedMessage.IntegrityHash,
-			"timestamp":      encryptedMessage.Timestamp,
-			"messageId":      fmt.Sprintf("group_msg_%d_%s", time.Now().Unix(), userID),
-			"senderId":       userID,
-			"roomId":         roomID,
+			"iv":              encryptedMessage.IV,
+			"authTag":         encryptedMessage.AuthTag,
+			"sessionId":       encryptedMessage.SessionID,
+			"integrityHash":   encryptedMessage.IntegrityHash,
+			"timestamp":       encryptedMessage.Timestamp,
+			"messageId":       fmt.Sprintf("group_msg_%d_%s", time.Now().Unix(), userID),
+			"senderId":        userID,
+			"roomId":          roomID,
 		}
 	}
 
@@ -759,11 +759,11 @@ func SendMessage(c *gin.Context) {
 							SenderID:      userID,
 							RecipientID:   wsRecipientID,
 							Ciphertext:    finalMetadata["ciphertext"].(string),
-							IV:           finalMetadata["iv"].(string),
-							AuthTag:      finalMetadata["authTag"].(string),
-							SessionID:    finalMetadata["sessionId"].(string),
+							IV:            finalMetadata["iv"].(string),
+							AuthTag:       finalMetadata["authTag"].(string),
+							SessionID:     finalMetadata["sessionId"].(string),
 							MessageNumber: int64(finalMetadata["messageNumber"].(float64)),
-							Timestamp:    time.Unix(int64(finalMetadata["timestamp"].(float64))/1000, 0),
+							Timestamp:     time.Unix(int64(finalMetadata["timestamp"].(float64))/1000, 0),
 							SecurityLevel: finalMetadata["securityLevel"].(string),
 							IntegrityHash: finalMetadata["integrityHash"].(string),
 						}
@@ -784,11 +784,11 @@ func SendMessage(c *gin.Context) {
 					SenderID:      userID,
 					RecipientID:   roomID,
 					Ciphertext:    finalMetadata["ciphertext"].(string),
-					IV:           finalMetadata["iv"].(string),
-					AuthTag:      finalMetadata["authTag"].(string),
-					SessionID:    roomID,
+					IV:            finalMetadata["iv"].(string),
+					AuthTag:       finalMetadata["authTag"].(string),
+					SessionID:     roomID,
 					MessageNumber: 0,
-					Timestamp:    time.Unix(int64(finalMetadata["timestamp"].(float64))/1000, 0),
+					Timestamp:     time.Unix(int64(finalMetadata["timestamp"].(float64))/1000, 0),
 					SecurityLevel: "GROUP_ENCRYPTED",
 					IntegrityHash: finalMetadata["integrityHash"].(string),
 				}

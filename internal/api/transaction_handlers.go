@@ -4,9 +4,9 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
 	"net/http"
 	"strconv"
+	"time"
 	"vaultke-backend/internal/models"
 	"vaultke-backend/internal/services"
 	"vaultke-backend/internal/utils"
@@ -88,12 +88,12 @@ func GetUserTransactions(c *gin.Context) {
 			err := db.(*sql.DB).QueryRow(userQuery, tx.InitiatedBy).Scan(&userID, &firstName, &lastName, &email, &phone)
 			if err == nil {
 				userInfo = map[string]interface{}{
-					"id":         userID,
-					"firstName":  firstName,
-					"lastName":   lastName,
-					"fullName":   firstName + " " + lastName,
-					"email":      email,
-					"phone":      phone,
+					"id":        userID,
+					"firstName": firstName,
+					"lastName":  lastName,
+					"fullName":  firstName + " " + lastName,
+					"email":     email,
+					"phone":     phone,
 				}
 			}
 		}

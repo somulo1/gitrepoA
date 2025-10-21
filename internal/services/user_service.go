@@ -485,14 +485,14 @@ func (s *UserService) GetUserStatistics(userID string) (map[string]interface{}, 
 
 	// Build response
 	stats["user_info"] = map[string]interface{}{
-		"id":         user.ID,
-		"firstName":  user.FirstName,
-		"lastName":   user.LastName,
-		"email":      user.Email,
-		"phone":      user.Phone,
-		"role":       user.Role,
-		"rating":     user.Rating,
-		"createdAt":  user.CreatedAt,
+		"id":        user.ID,
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"email":     user.Email,
+		"phone":     user.Phone,
+		"role":      user.Role,
+		"rating":    user.Rating,
+		"createdAt": user.CreatedAt,
 	}
 
 	stats["wallet_stats"] = walletStats

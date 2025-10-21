@@ -50,14 +50,14 @@ type BackupInfo struct {
 
 // UserBackupData represents the structure of user backup data
 type UserBackupData struct {
-	UserID      string                 `json:"user_id"`
-	BackupDate  time.Time              `json:"backup_date"`
-	Profile     map[string]interface{} `json:"profile"`
-	Chamas      []map[string]interface{} `json:"chamas"`
+	UserID       string                   `json:"user_id"`
+	BackupDate   time.Time                `json:"backup_date"`
+	Profile      map[string]interface{}   `json:"profile"`
+	Chamas       []map[string]interface{} `json:"chamas"`
 	Transactions []map[string]interface{} `json:"transactions"`
-	Meetings    []map[string]interface{} `json:"meetings"`
-	Documents   []map[string]interface{} `json:"documents"`
-	Settings    map[string]interface{} `json:"settings"`
+	Meetings     []map[string]interface{} `json:"meetings"`
+	Documents    []map[string]interface{} `json:"documents"`
+	Settings     map[string]interface{}   `json:"settings"`
 }
 
 // NewGoogleDriveService creates a new Google Drive service
@@ -311,8 +311,6 @@ func (gds *GoogleDriveService) CreateUserBackup(userID string) (*BackupResult, e
 		fmt.Printf("⚠️ WARNING: Using mock tokens for testing. This will NOT create actual files in Google Drive.\n")
 		fmt.Printf("   Use real OAuth tokens for production backups.\n")
 	}
-
-
 
 	// Create OAuth2 config with proper credentials
 	clientID := os.Getenv("GOOGLE_DRIVE_CLIENT_ID")
@@ -871,8 +869,8 @@ func parseTimeString(timeStr string) (time.Time, error) {
 
 	// Try multiple formats that SQLite might use
 	formats := []string{
-		time.RFC3339Nano,           // 2025-07-25T05:57:13.742311077+03:00
-		time.RFC3339,               // 2025-07-25T05:57:13+03:00
+		time.RFC3339Nano,                      // 2025-07-25T05:57:13.742311077+03:00
+		time.RFC3339,                          // 2025-07-25T05:57:13+03:00
 		"2006-01-02 15:04:05.999999999-07:00", // SQLite with timezone
 		"2006-01-02 15:04:05.999999999",       // SQLite with nanoseconds
 		"2006-01-02 15:04:05",                 // Standard format
@@ -887,4 +885,3 @@ func parseTimeString(timeStr string) (time.Time, error) {
 
 	return time.Time{}, fmt.Errorf("unable to parse time string: %s", timeStr)
 }
-

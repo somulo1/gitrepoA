@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 // MeetingService handles meeting-related operations
@@ -137,7 +137,7 @@ type MeetingAttendance struct {
 	LeftAt          *time.Time     `json:"leftAt"`
 	DurationMinutes int            `json:"durationMinutes"`
 	IsPresent       bool           `json:"isPresent"`
-	Notes           sql.NullString `json:"-"` // Exclude from JSON, use custom marshaling
+	Notes           sql.NullString `json:"-"`     // Exclude from JSON, use custom marshaling
 	NotesString     string         `json:"notes"` // For JSON serialization
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
@@ -673,9 +673,9 @@ type JitsiRoomData struct {
 	DisplayName  string `json:"displayName"`
 	UserEmail    string `json:"userEmail"`
 	// JaaS fields
-	Domain       string `json:"domain,omitempty"`
-	AppID        string `json:"appId,omitempty"`
-	JWT          string `json:"jwt,omitempty"`
+	Domain string `json:"domain,omitempty"`
+	AppID  string `json:"appId,omitempty"`
+	JWT    string `json:"jwt,omitempty"`
 }
 
 // GenerateJitsiRoomData generates Jitsi Meet room data for a user to join a meeting
@@ -783,58 +783,58 @@ func (s *MeetingService) GenerateJitsiRoomData(meetingID, userID, userRole strin
 
 // generateJaaSJWT builds a signed RS256 token for Jitsi as a Service
 func (s *MeetingService) generateJaaSJWT(appID, kid, roomName, displayName, email string, isModerator bool, userID string) (string, error) {
-    // Parse RSA private key
-    block, _ := pem.Decode([]byte(os.Getenv("JITSI_PRIVATE_KEY_PEM")))
-    if block == nil {
-        return "", fmt.Errorf("invalid JITSI_PRIVATE_KEY_PEM")
-    }
-    pk, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-    if err != nil {
-        // try PKCS1
-        if rsaKey, err2 := x509.ParsePKCS1PrivateKey(block.Bytes); err2 == nil {
-            pk = rsaKey
-        } else {
-            return "", fmt.Errorf("failed to parse private key: %w", err)
-        }
-    }
+	// Parse RSA private key
+	block, _ := pem.Decode([]byte(os.Getenv("JITSI_PRIVATE_KEY_PEM")))
+	if block == nil {
+		return "", fmt.Errorf("invalid JITSI_PRIVATE_KEY_PEM")
+	}
+	pk, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+	if err != nil {
+		// try PKCS1
+		if rsaKey, err2 := x509.ParsePKCS1PrivateKey(block.Bytes); err2 == nil {
+			pk = rsaKey
+		} else {
+			return "", fmt.Errorf("failed to parse private key: %w", err)
+		}
+	}
 
-    now := time.Now()
-    claims := jwt.MapClaims{
-        "aud": "jitsi",
-        "iss": "chat",
-        "sub": appID,
-        "room": "*",
-        "nbf": now.Unix(),
-        "exp": now.Add(4 * time.Hour).Unix(),
-        "context": map[string]interface{}{
-            "user": map[string]interface{}{
-                "id":        userID,
-                "name":      displayName,
-                "email":     email,
-                "moderator": isModerator,
-            },
-            "features": map[string]interface{}{
-                "livestreaming":   false,
-                "recording":       false,
-                "transcription":   false,
-                "outbound-call":   false,
-                "inbound-call":    false,
-                "file-upload":     false,
-                "list-visitors":   false,
-            },
-            "room": map[string]interface{}{
-                "regex": false,
-            },
-        },
-    }
+	now := time.Now()
+	claims := jwt.MapClaims{
+		"aud":  "jitsi",
+		"iss":  "chat",
+		"sub":  appID,
+		"room": "*",
+		"nbf":  now.Unix(),
+		"exp":  now.Add(4 * time.Hour).Unix(),
+		"context": map[string]interface{}{
+			"user": map[string]interface{}{
+				"id":        userID,
+				"name":      displayName,
+				"email":     email,
+				"moderator": isModerator,
+			},
+			"features": map[string]interface{}{
+				"livestreaming": false,
+				"recording":     false,
+				"transcription": false,
+				"outbound-call": false,
+				"inbound-call":  false,
+				"file-upload":   false,
+				"list-visitors": false,
+			},
+			"room": map[string]interface{}{
+				"regex": false,
+			},
+		},
+	}
 
-    token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-    token.Header["kid"] = kid
-    signed, err := token.SignedString(pk)
-    if err != nil {
-        return "", err
-    }
-    return signed, nil
+	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+	token.Header["kid"] = kid
+	signed, err := token.SignedString(pk)
+	if err != nil {
+		return "", err
+	}
+	return signed, nil
 }
 
 // generateJitsiRoomPassword generates a secure room password

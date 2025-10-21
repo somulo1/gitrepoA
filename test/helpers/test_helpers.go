@@ -29,16 +29,16 @@ import (
 
 // TestConfig holds test configuration
 type TestConfig struct {
-	JWTSecret    string
-	DatabaseURL  string
-	Environment  string
-	ServerPort   string
-	LiveKitKey   string
-	LiveKitSecret string
-	MpesaConsumerKey string
+	JWTSecret           string
+	DatabaseURL         string
+	Environment         string
+	ServerPort          string
+	LiveKitKey          string
+	LiveKitSecret       string
+	MpesaConsumerKey    string
 	MpesaConsumerSecret string
-	MpesaPasskey string
-	MpesaShortcode string
+	MpesaPasskey        string
+	MpesaShortcode      string
 }
 
 // TestUser represents a test user
@@ -59,16 +59,16 @@ type TestDatabase struct {
 // NewTestConfig creates a new test configuration
 func NewTestConfig() *TestConfig {
 	return &TestConfig{
-		JWTSecret:    "test-jwt-secret-key-12345678901234567890",
-		DatabaseURL:  ":memory:",
-		Environment:  "test",
-		ServerPort:   "8080",
-		LiveKitKey:   "test-livekit-key",
-		LiveKitSecret: "test-livekit-secret",
-		MpesaConsumerKey: "test-mpesa-consumer-key",
+		JWTSecret:           "test-jwt-secret-key-12345678901234567890",
+		DatabaseURL:         ":memory:",
+		Environment:         "test",
+		ServerPort:          "8080",
+		LiveKitKey:          "test-livekit-key",
+		LiveKitSecret:       "test-livekit-secret",
+		MpesaConsumerKey:    "test-mpesa-consumer-key",
 		MpesaConsumerSecret: "test-mpesa-consumer-secret",
-		MpesaPasskey: "test-mpesa-passkey",
-		MpesaShortcode: "123456",
+		MpesaPasskey:        "test-mpesa-passkey",
+		MpesaShortcode:      "123456",
 	}
 }
 
@@ -200,7 +200,7 @@ func SetupTestRouter(db *sql.DB, cfg *TestConfig) *gin.Engine {
 	// Health check
 	router.GET("/health", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"status": "ok",
+			"status":  "ok",
 			"version": "1.0.0",
 		})
 	})
@@ -362,24 +362,24 @@ func MakeRequest(router *gin.Engine, method, url string, body interface{}, heade
 // AssertSuccessResponse asserts that the response is successful
 func AssertSuccessResponse(t *testing.T, w *httptest.ResponseRecorder, expectedStatus int) map[string]interface{} {
 	assert.Equal(t, expectedStatus, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.True(t, response["success"].(bool))
-	
+
 	return response
 }
 
 // AssertErrorResponse asserts that the response is an error
 func AssertErrorResponse(t *testing.T, w *httptest.ResponseRecorder, expectedStatus int) map[string]interface{} {
 	assert.Equal(t, expectedStatus, w.Code)
-	
+
 	var response map[string]interface{}
 	err := json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(t, err)
 	assert.False(t, response["success"].(bool))
-	
+
 	return response
 }
 
@@ -458,7 +458,7 @@ type TestSuite struct {
 // NewTestSuite creates a new test suite
 func NewTestSuite(t *testing.T) *TestSuite {
 	db, router, cfg, _ := SetupTestEnvironment(t)
-	
+
 	// Create test users
 	users := map[string]TestUser{
 		"admin": {
@@ -515,7 +515,7 @@ func (ts *TestSuite) GetAuthHeaders(userType string) map[string]string {
 	if !exists {
 		return nil
 	}
-	
+
 	return map[string]string{
 		"Authorization": "Bearer " + user.Token,
 	}

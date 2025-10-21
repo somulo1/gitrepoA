@@ -24,7 +24,7 @@ type SecurityConfig struct {
 func DefaultSecurityConfig() *SecurityConfig {
 	return &SecurityConfig{
 		MaxRequestSize:    10 * 1024 * 1024, // 10MB
-		RateLimitRequests: 10000,             // Very high for development
+		RateLimitRequests: 10000,            // Very high for development
 		RateLimitWindow:   time.Minute,
 		AllowedOrigins:    []string{"*"}, // Configure properly in production
 		RequireHTTPS:      false,         // Set to true in production

@@ -156,12 +156,12 @@ type SignalSignedPreKey struct {
 
 // SignalSession represents an encrypted session
 type SignalSession struct {
-	UserID       string    `json:"userId"`
-	DeviceID     int       `json:"deviceId"`
-	SessionID    string    `json:"sessionId"`
-	SessionData  string    `json:"sessionData"`
-	CreatedAt    time.Time `json:"createdAt"`
-	UpdatedAt    time.Time `json:"updatedAt"`
+	UserID      string    `json:"userId"`
+	DeviceID    int       `json:"deviceId"`
+	SessionID   string    `json:"sessionId"`
+	SessionData string    `json:"sessionData"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
 }
 
 // SignalMessage represents an encrypted message
@@ -180,15 +180,15 @@ type SignalMessage struct {
 
 // PreKeyBundle represents a bundle of pre-keys for session initiation
 type PreKeyBundle struct {
-	UserID           string   `json:"userId"`
-	DeviceID         int      `json:"deviceId"`
-	RegistrationID   int64    `json:"registrationId"`
-	IdentityKey      string   `json:"identityKey"`
-	SignedPreKey     string   `json:"signedPreKey"`
-	SignedPreKeyID   int64    `json:"signedPreKeyId"`
-	SignedPreKeySig  string   `json:"signedPreKeySignature"`
-	PreKey           string   `json:"preKey"`
-	PreKeyID         int64    `json:"preKeyId"`
+	UserID          string `json:"userId"`
+	DeviceID        int    `json:"deviceId"`
+	RegistrationID  int64  `json:"registrationId"`
+	IdentityKey     string `json:"identityKey"`
+	SignedPreKey    string `json:"signedPreKey"`
+	SignedPreKeyID  int64  `json:"signedPreKeyId"`
+	SignedPreKeySig string `json:"signedPreKeySignature"`
+	PreKey          string `json:"preKey"`
+	PreKeyID        int64  `json:"preKeyId"`
 }
 
 // NewMilitaryGradeE2EEService creates a new military-grade E2EE service

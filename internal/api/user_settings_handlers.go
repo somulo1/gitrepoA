@@ -16,12 +16,12 @@ type PrivacySettings struct {
 
 // Security Settings structures
 type SecuritySettings struct {
-	BiometricLogin             bool `json:"biometric_login" db:"biometric_login"`
-	TwoFactorAuth              bool `json:"two_factor_auth" db:"two_factor_auth"`
-	AutoLogout                 bool `json:"auto_logout" db:"auto_logout"`
-	LoginNotifications         bool `json:"login_notifications" db:"login_notifications"`
-	SuspiciousActivityAlerts   bool `json:"suspicious_activity_alerts" db:"suspicious_activity_alerts"`
-	DeviceManagement           bool `json:"device_management" db:"device_management"`
+	BiometricLogin           bool `json:"biometric_login" db:"biometric_login"`
+	TwoFactorAuth            bool `json:"two_factor_auth" db:"two_factor_auth"`
+	AutoLogout               bool `json:"auto_logout" db:"auto_logout"`
+	LoginNotifications       bool `json:"login_notifications" db:"login_notifications"`
+	SuspiciousActivityAlerts bool `json:"suspicious_activity_alerts" db:"suspicious_activity_alerts"`
+	DeviceManagement         bool `json:"device_management" db:"device_management"`
 }
 
 // User Preferences structures
@@ -215,12 +215,12 @@ func GetSecuritySettings(c *gin.Context) {
 		if err == sql.ErrNoRows {
 			// Return default settings if none exist
 			settings = SecuritySettings{
-				BiometricLogin:             false,
-				TwoFactorAuth:              false,
-				AutoLogout:                 true,
-				LoginNotifications:         true,
-				SuspiciousActivityAlerts:   true,
-				DeviceManagement:           true,
+				BiometricLogin:           false,
+				TwoFactorAuth:            false,
+				AutoLogout:               true,
+				LoginNotifications:       true,
+				SuspiciousActivityAlerts: true,
+				DeviceManagement:         true,
 			}
 		} else {
 			c.JSON(http.StatusInternalServerError, gin.H{
@@ -291,7 +291,7 @@ func UpdateSecuritySettings(c *gin.Context) {
 		updated_at = datetime('now')
 	`
 
-	_, err := db.(*sql.DB).Exec(query, userID, settings.BiometricLogin, settings.TwoFactorAuth, 
+	_, err := db.(*sql.DB).Exec(query, userID, settings.BiometricLogin, settings.TwoFactorAuth,
 		settings.AutoLogout, settings.LoginNotifications, settings.SuspiciousActivityAlerts, settings.DeviceManagement)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

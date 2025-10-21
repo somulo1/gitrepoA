@@ -13,9 +13,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 
+	"vaultke-backend/internal/api"
 	"vaultke-backend/config"
 	"vaultke-backend/database"
-	"vaultke-backend/internal/api"
 	"vaultke-backend/internal/middleware"
 	"vaultke-backend/internal/services"
 )
@@ -73,10 +73,10 @@ func main() {
 
 	// Load HTML templates for OAuth pages
 
-	router.LoadHTMLGlob("templates/*")
+router.LoadHTMLGlob("templates/*")
 
 	// Middleware
-	router.Use(gin.Logger()) // Commented out to reduce log noise
+	 router.Use(gin.Logger()) // Commented out to reduce log noise
 	router.Use(gin.Recovery())
 
 	// HSTS middleware for production
@@ -96,9 +96,9 @@ func main() {
 		// Define allowed origins for different environments
 		allowedOrigins := []string{
 			"https://gitrepoa-1.onrender.com", // your backend domain
-			"http://localhost:8081",           // Metro / Expo
+			"http://localhost:8081",                   // Metro / Expo
 			"http://127.0.0.1:8081",
-			"http://localhost:19006", // Expo web preview
+			"http://localhost:19006",                  // Expo web preview
 			"http://127.0.0.1:19006",
 			"http://localhost:3000",
 			"http://127.0.0.1:3000",
@@ -129,12 +129,12 @@ func main() {
 		if c.Request.Method == "OPTIONS" {
 			log.Printf("🔒 CORS: Handling OPTIONS preflight for %s", path)
 			// Set CORS headers for OPTIONS requests
-			c.Header("Access-Control-Allow-Origin", allowedOrigin)
-			c.Header("Access-Control-Allow-Credentials", "false")
-			c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token, X-File-Name, X-File-Size, X-Timezone, X-Language, X-Screen-Resolution, X-Device-Type, X-Device-Name, X-Browser-Name, X-OS-Name, X-Connection-Type")
-			c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-			c.Header("Access-Control-Expose-Headers", "Content-Length, Authorization, Content-Disposition")
-			c.Header("Access-Control-Max-Age", "86400")
+			c.Header().Set("Access-Control-Allow-Origin", allowedOrigin)
+			c.Header().Set("Access-Control-Allow-Credentials", "false")
+			c.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token, X-File-Name, X-File-Size, X-Timezone, X-Language, X-Screen-Resolution, X-Device-Type, X-Device-Name, X-Browser-Name, X-OS-Name, X-Connection-Type")
+			c.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
+			c.Header().Set("Access-Control-Expose-Headers", "Content-Length, Authorization, Content-Disposition")
+			c.Header().Set("Access-Control-Max-Age", "86400")
 			c.AbortWithStatus(204)
 			return
 		}
@@ -280,9 +280,9 @@ func main() {
 		// Health check endpoint (public, no authentication required)
 		apiGroup.GET("/health", func(c *gin.Context) {
 			c.JSON(200, gin.H{
-				"success":   true,
-				"status":    "healthy",
-				"message":   "VaultKe API is running",
+				"success": true,
+				"status":  "healthy",
+				"message": "VaultKe API is running",
 				"timestamp": time.Now().Unix(),
 			})
 		})
@@ -358,9 +358,9 @@ func main() {
 			users := protected.Group("/users")
 			{
 				users.GET("/", api.GetUsers)
-				users.GET("/admin/all", api.GetAllUsersForAdmin)       // Admin endpoint to get all users
-				users.GET("/admin/statistics", api.GetAdminStatistics) // Admin statistics endpoint
-				users.GET("/admin/analytics", api.GetSystemAnalytics)  // System analytics endpoint
+				users.GET("/admin/all", api.GetAllUsersForAdmin)         // Admin endpoint to get all users
+				users.GET("/admin/statistics", api.GetAdminStatistics)   // Admin statistics endpoint
+				users.GET("/admin/analytics", api.GetSystemAnalytics)    // System analytics endpoint
 				users.GET("/profile", authHandlers.GetProfile)
 				users.PUT("/profile", authHandlers.UpdateProfile)
 				users.GET("/statistics", api.GetUserStatistics) // User statistics endpoint
@@ -775,7 +775,7 @@ func main() {
 				contributions.GET("", api.GetContributions)
 				contributions.POST("", api.MakeContribution)
 				contributions.GET("/:id", api.GetContribution)
-				contributions.GET("/chamas/:chamaId/members", api.GetChamaMembersForContributions)                 // For cash contributions
+				contributions.GET("/chamas/:chamaId/members", api.GetChamaMembersForContributions) // For cash contributions
 				contributions.GET("/chamas/:chamaId/merry-go-round-amount", api.GetMerryGoRoundContributionAmount) // Get expected merry-go-round amount
 			}
 
@@ -792,22 +792,22 @@ func main() {
 				meetings.PATCH("/:id", api.UpdateMeeting) // Support PATCH requests for meeting updates
 				meetings.DELETE("/:id", api.DeleteMeeting)
 				meetings.POST("/:id/join", api.JoinMeeting)
-				meetings.POST("/:id/join-livekit", api.JoinMeetingWithLiveKit)          // New LiveKit join endpoint
-				meetings.POST("/:id/join-jitsi", api.JoinMeetingWithJitsi)              // New Jitsi Meet join endpoint
-				meetings.GET("/:id/preview", api.PreviewMeeting)                        // New meeting preview for chairperson/secretary
-				meetings.POST("/:id/start", api.StartMeeting)                           // New start meeting endpoint
-				meetings.POST("/:id/end", api.EndMeeting)                               // New end meeting endpoint
-				meetings.POST("/:id/attendance", api.MarkAttendance)                    // New attendance marking
-				meetings.GET("/:id/attendance", api.GetMeetingAttendance)               // New attendance retrieval
-				meetings.POST("/:id/documents", api.UploadMeetingDocument)              // Upload meeting documents
-				meetings.GET("/:id/documents", api.GetMeetingDocuments)                 // Get meeting documents
-				meetings.DELETE("/:id/documents/:docId", api.DeleteMeetingDocument)     // Delete meeting document
-				meetings.POST("/:id/minutes", api.SaveMeetingMinutes)                   // Save meeting minutes/notes
-				meetings.PUT("/:id/minutes", api.UpdateMeetingMinutes)                  // Update meeting minutes/notes
-				meetings.GET("/:id/minutes", api.GetMeetingMinutes)                     // Get meeting minutes/notes
+				meetings.POST("/:id/join-livekit", api.JoinMeetingWithLiveKit)      // New LiveKit join endpoint
+				meetings.POST("/:id/join-jitsi", api.JoinMeetingWithJitsi)          // New Jitsi Meet join endpoint
+				meetings.GET("/:id/preview", api.PreviewMeeting)                    // New meeting preview for chairperson/secretary
+				meetings.POST("/:id/start", api.StartMeeting)                       // New start meeting endpoint
+				meetings.POST("/:id/end", api.EndMeeting)                           // New end meeting endpoint
+				meetings.POST("/:id/attendance", api.MarkAttendance)                // New attendance marking
+				meetings.GET("/:id/attendance", api.GetMeetingAttendance)           // New attendance retrieval
+				meetings.POST("/:id/documents", api.UploadMeetingDocument)          // Upload meeting documents
+				meetings.GET("/:id/documents", api.GetMeetingDocuments)             // Get meeting documents
+				meetings.DELETE("/:id/documents/:docId", api.DeleteMeetingDocument) // Delete meeting document
+				meetings.POST("/:id/minutes", api.SaveMeetingMinutes)               // Save meeting minutes/notes
+				meetings.PUT("/:id/minutes", api.UpdateMeetingMinutes)              // Update meeting minutes/notes
+				meetings.GET("/:id/minutes", api.GetMeetingMinutes)                 // Get meeting minutes/notes
 				meetings.GET("/:id/calendar/add-url", api.GetGoogleCalendarAddEventURL) // Get Google Calendar add-event URL
-				meetings.POST("/:id/calendar/create", api.CreateGoogleCalendarEvent)    // Create calendar event with reminders
-				meetings.GET("/test-livekit", api.TestLiveKitConnection)                // Test LiveKit configuration
+				meetings.POST("/:id/calendar/create", api.CreateGoogleCalendarEvent)   // Create calendar event with reminders
+				meetings.GET("/test-livekit", api.TestLiveKitConnection)            // Test LiveKit configuration
 			}
 
 			// Merry-Go-Round routes
@@ -936,3 +936,4 @@ func main() {
 
 	log.Println("Server shutdown complete")
 }
+

@@ -251,7 +251,7 @@ package api
 
 // 	// Update delivery contact
 // 	query := `
-// 		UPDATE delivery_contacts 
+// 		UPDATE delivery_contacts
 // 		SET name = ?, phone = ?, email = ?, address = ?, notes = ?, is_active = ?, updated_at = CURRENT_TIMESTAMP
 // 		WHERE id = ?
 // 	`

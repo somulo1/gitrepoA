@@ -23,11 +23,11 @@ type WebSocketMessage struct {
 
 // Client represents a WebSocket client
 type Client struct {
-	ID            string
-	UserID        string
-	Conn          *websocket.Conn
-	Send          chan WebSocketMessage
-	Hub           *Hub
+	ID               string
+	UserID           string
+	Conn             *websocket.Conn
+	Send             chan WebSocketMessage
+	Hub              *Hub
 	WebSocketService *WebSocketService
 }
 
@@ -303,7 +303,7 @@ func (c *Client) readPump() {
 func (c *Client) writePump() {
 	defer c.Conn.Close()
 
-	for  {
+	for {
 		select {
 		case message, ok := <-c.Send:
 			if !ok {
@@ -384,18 +384,18 @@ func (c *Client) handleSendMessage(wsService *WebSocketService, message WebSocke
 
 	// Convert to map for WebSocket broadcast
 	savedMessage := map[string]interface{}{
-		"id":         messageObj.ID,
-		"roomId":     messageObj.RoomID,
-		"senderId":   messageObj.SenderID,
-		"type":       messageObj.Type,
-		"content":    messageObj.Content,
-		"metadata":   messageObj.Metadata,
-		"fileUrl":    messageObj.FileURL,
-		"isEdited":   messageObj.IsEdited,
-		"isDeleted":  messageObj.IsDeleted,
-		"replyToId":  messageObj.ReplyToID,
-		"createdAt":  messageObj.CreatedAt,
-		"updatedAt":  messageObj.UpdatedAt,
+		"id":        messageObj.ID,
+		"roomId":    messageObj.RoomID,
+		"senderId":  messageObj.SenderID,
+		"type":      messageObj.Type,
+		"content":   messageObj.Content,
+		"metadata":  messageObj.Metadata,
+		"fileUrl":   messageObj.FileURL,
+		"isEdited":  messageObj.IsEdited,
+		"isDeleted": messageObj.IsDeleted,
+		"replyToId": messageObj.ReplyToID,
+		"createdAt": messageObj.CreatedAt,
+		"updatedAt": messageObj.UpdatedAt,
 		"sender": map[string]interface{}{
 			"id":        messageObj.Sender.ID,
 			"firstName": messageObj.Sender.FirstName,

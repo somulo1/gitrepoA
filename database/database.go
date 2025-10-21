@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
-    "time"
-    "strings"
+	"strings"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -106,7 +106,6 @@ func Migrate(db *sql.DB) error {
 		createSignalMessagesTable,
 		createE2EEKeyBundlesTable,
 		createE2EESessionsTable,
-
 	}
 
 	for i, migration := range migrations {
@@ -160,14 +159,14 @@ func Migrate(db *sql.DB) error {
 				return fmt.Errorf("failed to add chama category column: %w", err)
 			}
 		} else if i == len(migrations) { // Last migration is chat_message_refactor
-				if err := updateChatMessageStorage(db); err != nil {
-					return fmt.Errorf("failed to update chat message storage: %w", err)
-				}
-			} else if i == len(migrations)+1 { // New migration for chat message content refactor
-				if err := refactorChatMessageContent(db); err != nil {
-					return fmt.Errorf("failed to refactor chat message content: %w", err)
-				}
-			} else {
+			if err := updateChatMessageStorage(db); err != nil {
+				return fmt.Errorf("failed to update chat message storage: %w", err)
+			}
+		} else if i == len(migrations)+1 { // New migration for chat message content refactor
+			if err := refactorChatMessageContent(db); err != nil {
+				return fmt.Errorf("failed to refactor chat message content: %w", err)
+			}
+		} else {
 			// Regular migrations
 			if _, err := db.Exec(migration); err != nil {
 				return fmt.Errorf("failed to run migration %d: %w", i+1, err)
@@ -287,7 +286,6 @@ func addDividendTypeColumn(db *sql.DB) error {
 
 	return nil
 }
-
 
 // SQL migration statements
 const createUsersTable = `
@@ -525,8 +523,6 @@ CREATE TABLE IF NOT EXISTS transactions (
     FOREIGN KEY (initiated_by) REFERENCES users(id),
     FOREIGN KEY (approved_by) REFERENCES users(id)
 );`
-
-
 
 const createNotificationsTable = `
 CREATE TABLE IF NOT EXISTS notifications (
@@ -1915,7 +1911,6 @@ CREATE TABLE IF NOT EXISTS financial_reports (
     FOREIGN KEY (chama_id) REFERENCES chamas(id) ON DELETE CASCADE,
     FOREIGN KEY (generated_by) REFERENCES users(id)
 );`
-
 
 // addEnhancedLearningContentFields adds enhanced content fields to learning_courses table
 const addEnhancedLearningContentFields = "SELECT 1" // Placeholder - actual logic in migration function

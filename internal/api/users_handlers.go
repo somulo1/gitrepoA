@@ -312,32 +312,32 @@ func GetProfile(c *gin.Context) {
 	`
 
 	var user struct {
-		ID                   string         `json:"id"`
-		Email                string         `json:"email"`
-		Phone                sql.NullString `json:"phone"`
-		FirstName            string         `json:"firstName"`
-		LastName             string         `json:"lastName"`
-		Avatar               sql.NullString `json:"avatar"`
-		Role                 string         `json:"role"`
-		Status               string         `json:"status"`
-		IsEmailVerified      bool           `json:"isEmailVerified"`
-		IsPhoneVerified      bool           `json:"isPhoneVerified"`
-		Language             sql.NullString `json:"language"`
-		Theme                sql.NullString `json:"theme"`
-		County               sql.NullString `json:"county"`
-		Town                 sql.NullString `json:"town"`
-		Latitude             sql.NullFloat64 `json:"latitude"`
-		Longitude            sql.NullFloat64 `json:"longitude"`
-		BusinessType         sql.NullString `json:"businessType"`
-		BusinessDescription  sql.NullString `json:"businessDescription"`
-		Rating               float64        `json:"rating"`
-		TotalRatings         int            `json:"totalRatings"`
-		Bio                  sql.NullString `json:"bio"`
-		Occupation           sql.NullString `json:"occupation"`
-		DateOfBirth          sql.NullString `json:"dateOfBirth"`
-		Gender               sql.NullString `json:"gender"`
-		CreatedAt            string         `json:"createdAt"`
-		UpdatedAt            string         `json:"updatedAt"`
+		ID                  string          `json:"id"`
+		Email               string          `json:"email"`
+		Phone               sql.NullString  `json:"phone"`
+		FirstName           string          `json:"firstName"`
+		LastName            string          `json:"lastName"`
+		Avatar              sql.NullString  `json:"avatar"`
+		Role                string          `json:"role"`
+		Status              string          `json:"status"`
+		IsEmailVerified     bool            `json:"isEmailVerified"`
+		IsPhoneVerified     bool            `json:"isPhoneVerified"`
+		Language            sql.NullString  `json:"language"`
+		Theme               sql.NullString  `json:"theme"`
+		County              sql.NullString  `json:"county"`
+		Town                sql.NullString  `json:"town"`
+		Latitude            sql.NullFloat64 `json:"latitude"`
+		Longitude           sql.NullFloat64 `json:"longitude"`
+		BusinessType        sql.NullString  `json:"businessType"`
+		BusinessDescription sql.NullString  `json:"businessDescription"`
+		Rating              float64         `json:"rating"`
+		TotalRatings        int             `json:"totalRatings"`
+		Bio                 sql.NullString  `json:"bio"`
+		Occupation          sql.NullString  `json:"occupation"`
+		DateOfBirth         sql.NullString  `json:"dateOfBirth"`
+		Gender              sql.NullString  `json:"gender"`
+		CreatedAt           string          `json:"createdAt"`
+		UpdatedAt           string          `json:"updatedAt"`
 	}
 
 	err := db.(*sql.DB).QueryRow(query, userID).Scan(
@@ -441,17 +441,17 @@ func UpdateProfile(c *gin.Context) {
 	}
 
 	var request struct {
-		FirstName       string `json:"firstName"`
-		LastName        string `json:"lastName"`
-		Phone           string `json:"phone"`
-		County          string `json:"county"`
-		Town            string `json:"town"`
-		Bio             string `json:"bio"`
-		Occupation      string `json:"occupation"`
-		DateOfBirth     string `json:"dateOfBirth"`
-		Gender          string `json:"gender"`
-		ProfileImage    string `json:"profile_image"`
-		Avatar          string `json:"avatar"`
+		FirstName    string `json:"firstName"`
+		LastName     string `json:"lastName"`
+		Phone        string `json:"phone"`
+		County       string `json:"county"`
+		Town         string `json:"town"`
+		Bio          string `json:"bio"`
+		Occupation   string `json:"occupation"`
+		DateOfBirth  string `json:"dateOfBirth"`
+		Gender       string `json:"gender"`
+		ProfileImage string `json:"profile_image"`
+		Avatar       string `json:"avatar"`
 	}
 
 	if err := c.ShouldBindJSON(&request); err != nil {

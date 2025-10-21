@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -35,14 +35,14 @@ func getFloatFromMeta(meta map[string]interface{}, key string, defaultValue floa
 
 // ChatService handles chat and messaging functionality
 type ChatService struct {
-	db        *sql.DB
+	db          *sql.DB
 	e2eeService *MilitaryGradeE2EEService
 }
 
 // NewChatService creates a new chat service
 func NewChatService(db *sql.DB) *ChatService {
 	return &ChatService{
-		db: db,
+		db:          db,
 		e2eeService: NewMilitaryGradeE2EEService(db),
 	}
 }
@@ -707,10 +707,10 @@ func (s *ChatService) GetUserChatRooms(userID string) ([]*ChatRoomWithParticipan
 
 			// Check if this looks like encrypted content
 			if strings.Contains(lastMsgStr, "_enc_") ||
-			   strings.Contains(lastMsgStr, "_encrypted_") ||
-			   strings.Contains(lastMsgStr, "_cipher_") ||
-			   strings.Contains(lastMsgStr, "_secure_") ||
-			   (strings.Contains(lastMsgStr, "==") && strings.HasSuffix(lastMsgStr, "==")) {
+				strings.Contains(lastMsgStr, "_encrypted_") ||
+				strings.Contains(lastMsgStr, "_cipher_") ||
+				strings.Contains(lastMsgStr, "_secure_") ||
+				(strings.Contains(lastMsgStr, "==") && strings.HasSuffix(lastMsgStr, "==")) {
 
 				// Try to get the actual last message and decrypt it
 				lastMessage, err := s.getLastMessageForRoom(room.ID, userID)
@@ -866,11 +866,11 @@ func (s *ChatService) decryptMessageContentForList(content, metadata, roomID, us
 					SenderID:      getStringFromMeta(meta, "senderId", ""),
 					RecipientID:   roomID,
 					Ciphertext:    getStringFromMeta(meta, "ciphertext", content),
-					IV:           getStringFromMeta(meta, "iv", ""),
-					AuthTag:      getStringFromMeta(meta, "authTag", ""),
-					SessionID:    roomID,
+					IV:            getStringFromMeta(meta, "iv", ""),
+					AuthTag:       getStringFromMeta(meta, "authTag", ""),
+					SessionID:     roomID,
 					MessageNumber: 0,
-					Timestamp:    time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
+					Timestamp:     time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
 					SecurityLevel: securityLevel,
 					IntegrityHash: getStringFromMeta(meta, "integrityHash", ""),
 				}
@@ -886,11 +886,11 @@ func (s *ChatService) decryptMessageContentForList(content, metadata, roomID, us
 					SenderID:      getStringFromMeta(meta, "senderId", ""),
 					RecipientID:   getStringFromMeta(meta, "recipientId", ""),
 					Ciphertext:    getStringFromMeta(meta, "ciphertext", content),
-					IV:           getStringFromMeta(meta, "iv", ""),
-					AuthTag:      getStringFromMeta(meta, "authTag", ""),
-					SessionID:    getStringFromMeta(meta, "sessionId", ""),
+					IV:            getStringFromMeta(meta, "iv", ""),
+					AuthTag:       getStringFromMeta(meta, "authTag", ""),
+					SessionID:     getStringFromMeta(meta, "sessionId", ""),
 					MessageNumber: int64(getFloatFromMeta(meta, "messageNumber", 0)),
-					Timestamp:    time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
+					Timestamp:     time.Unix(int64(getFloatFromMeta(meta, "timestamp", float64(time.Now().Unix())))/1000, 0),
 					SecurityLevel: getStringFromMeta(meta, "securityLevel", "MILITARY_GRADE"),
 					IntegrityHash: getStringFromMeta(meta, "integrityHash", ""),
 				}

@@ -242,18 +242,18 @@ func GetUserMeetings(c *gin.Context) {
 
 	for rows.Next() {
 		var meeting struct {
-			ID          string
-			ChamaID     string
-			Title       string
-			Description sql.NullString
-			ScheduledAt time.Time
-			Duration    sql.NullInt64
-			Location    sql.NullString
-			MeetingURL  sql.NullString
-			MeetingType sql.NullString
-			Status      string
-			CreatedBy   string
-			CreatedAt   time.Time
+			ID               string
+			ChamaID          string
+			Title            string
+			Description      sql.NullString
+			ScheduledAt      time.Time
+			Duration         sql.NullInt64
+			Location         sql.NullString
+			MeetingURL       sql.NullString
+			MeetingType      sql.NullString
+			Status           string
+			CreatedBy        string
+			CreatedAt        time.Time
 			CreatorFirstName string
 			CreatorLastName  string
 			CreatorEmail     string
@@ -520,7 +520,7 @@ func CreateMeeting(c *gin.Context) {
 					fmt.Sprintf("New Meeting: %s", req.Title),
 					fmt.Sprintf("A new meeting '%s' has been scheduled for %s in %s", req.Title, chamaName, meetingTime.Format("Jan 2, 2006 at 3:04 PM")),
 					data,
-					true, // sendPush
+					true,  // sendPush
 					false, // sendEmail
 					false, // sendSMS
 				)
@@ -1130,160 +1130,160 @@ func EndMeeting(c *gin.Context) {
 
 // GetGoogleCalendarAddEventURL returns a pre-filled Google Calendar event URL for a meeting
 func GetGoogleCalendarAddEventURL(c *gin.Context) {
-    meetingID := c.Param("id")
-    if meetingID == "" {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Meeting ID is required",
-        })
-        return
-    }
+	meetingID := c.Param("id")
+	if meetingID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Meeting ID is required",
+		})
+		return
+	}
 
-    // Get meeting details
-    meeting, err := meetingService.GetMeeting(meetingID)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Failed to get meeting: " + err.Error(),
-        })
-        return
-    }
+	// Get meeting details
+	meeting, err := meetingService.GetMeeting(meetingID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Failed to get meeting: " + err.Error(),
+		})
+		return
+	}
 
-    // Build a summary and description (include chama name)
-    // Fetch chama name for better labeling
-    db, dbExists := c.Get("db")
-    var chamaName string
-    if dbExists {
-        _ = db.(*sql.DB).QueryRow("SELECT name FROM chamas WHERE id = ?", meeting.ChamaID).Scan(&chamaName)
-    }
-    if chamaName == "" {
-        chamaName = "Chama"
-    }
+	// Build a summary and description (include chama name)
+	// Fetch chama name for better labeling
+	db, dbExists := c.Get("db")
+	var chamaName string
+	if dbExists {
+		_ = db.(*sql.DB).QueryRow("SELECT name FROM chamas WHERE id = ?", meeting.ChamaID).Scan(&chamaName)
+	}
+	if chamaName == "" {
+		chamaName = "Chama"
+	}
 
-    summary := meeting.Title
-    if summary == "" {
-        summary = "Chama Meeting"
-    }
-    summary = fmt.Sprintf("%s — %s", summary, chamaName)
+	summary := meeting.Title
+	if summary == "" {
+		summary = "Chama Meeting"
+	}
+	summary = fmt.Sprintf("%s — %s", summary, chamaName)
 
-    description := fmt.Sprintf("%s\n\nLocation: %s.", "Chama meeting.", meeting.Location)
-    if meeting.MeetingURL != "" {
-        description += "\\nJoin: " + meeting.MeetingURL
-    }
+	description := fmt.Sprintf("%s\n\nLocation: %s.", "Chama meeting.", meeting.Location)
+	if meeting.MeetingURL != "" {
+		description += "\\nJoin: " + meeting.MeetingURL
+	}
 
-    // Compute start/end using scheduled time and duration in EAT
-    eat, _ := time.LoadLocation("Africa/Nairobi")
-    start := meeting.ScheduledAt.In(eat)
-    end := meeting.ScheduledAt.In(eat).Add(time.Duration(max(1, meeting.Duration)) * time.Minute)
+	// Compute start/end using scheduled time and duration in EAT
+	eat, _ := time.LoadLocation("Africa/Nairobi")
+	start := meeting.ScheduledAt.In(eat)
+	end := meeting.ScheduledAt.In(eat).Add(time.Duration(max(1, meeting.Duration)) * time.Minute)
 
-    // Google Calendar template URL
-    // https://calendar.google.com/calendar/render?action=TEMPLATE&text=...&dates=YYYYMMDDTHHMMSSZ/YYY...&details=...&location=...
-    const template = "https://calendar.google.com/calendar/render"
-    params := url.Values{}
-    params.Set("action", "TEMPLATE")
-    params.Set("text", summary)
-    params.Set("details", description)
-    if meeting.Location != "" {
-        params.Set("location", meeting.Location)
-    }
+	// Google Calendar template URL
+	// https://calendar.google.com/calendar/render?action=TEMPLATE&text=...&dates=YYYYMMDDTHHMMSSZ/YYY...&details=...&location=...
+	const template = "https://calendar.google.com/calendar/render"
+	params := url.Values{}
+	params.Set("action", "TEMPLATE")
+	params.Set("text", summary)
+	params.Set("details", description)
+	if meeting.Location != "" {
+		params.Set("location", meeting.Location)
+	}
 
-    // Provide local datetime without Z and set ctz to Africa/Nairobi for accurate display
-    toLocal := func(t time.Time) string { return t.Format("20060102T150405") }
-    params.Set("dates", fmt.Sprintf("%s/%s", toLocal(start), toLocal(end)))
-    params.Set("ctz", "Africa/Nairobi")
+	// Provide local datetime without Z and set ctz to Africa/Nairobi for accurate display
+	toLocal := func(t time.Time) string { return t.Format("20060102T150405") }
+	params.Set("dates", fmt.Sprintf("%s/%s", toLocal(start), toLocal(end)))
+	params.Set("ctz", "Africa/Nairobi")
 
-    c.JSON(http.StatusOK, gin.H{
-        "success": true,
-        "data": gin.H{
-            "url": template + "?" + params.Encode(),
-        },
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"data": gin.H{
+			"url": template + "?" + params.Encode(),
+		},
+	})
 }
 
 // CreateGoogleCalendarEvent creates the event in the user's Google Calendar with 30/10/0 minute reminders
 func CreateGoogleCalendarEvent(c *gin.Context) {
-    meetingID := c.Param("id")
-    if meetingID == "" {
-        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Meeting ID is required"})
-        return
-    }
+	meetingID := c.Param("id")
+	if meetingID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Meeting ID is required"})
+		return
+	}
 
-    // Auth user
-    userID := c.GetString("userID")
-    if userID == "" {
-        c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "User not authenticated"})
-        return
-    }
+	// Auth user
+	userID := c.GetString("userID")
+	if userID == "" {
+		c.JSON(http.StatusUnauthorized, gin.H{"success": false, "error": "User not authenticated"})
+		return
+	}
 
-    // Get DB and services
-    db, exists := c.Get("db")
-    if !exists {
-        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Database connection not available"})
-        return
-    }
+	// Get DB and services
+	db, exists := c.Get("db")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Database connection not available"})
+		return
+	}
 
-    // Load meeting and chama name
-    meeting, err := meetingService.GetMeeting(meetingID)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Failed to get meeting: " + err.Error()})
-        return
-    }
+	// Load meeting and chama name
+	meeting, err := meetingService.GetMeeting(meetingID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Failed to get meeting: " + err.Error()})
+		return
+	}
 
-    // Fetch chama name
-    var chamaName string
-    err = db.(*sql.DB).QueryRow("SELECT name FROM chamas WHERE id = ?", meeting.ChamaID).Scan(&chamaName)
-    if err != nil {
-        chamaName = "Chama"
-    }
+	// Fetch chama name
+	var chamaName string
+	err = db.(*sql.DB).QueryRow("SELECT name FROM chamas WHERE id = ?", meeting.ChamaID).Scan(&chamaName)
+	if err != nil {
+		chamaName = "Chama"
+	}
 
-    // Get the user's stored Google tokens via GoogleDriveService storage (shared token store)
-    driveService := services.NewGoogleDriveService(db.(*sql.DB))
-    token, err := driveService.GetUserTokens(userID)
-    if err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Google account not connected for this user"})
-        return
-    }
+	// Get the user's stored Google tokens via GoogleDriveService storage (shared token store)
+	driveService := services.NewGoogleDriveService(db.(*sql.DB))
+	token, err := driveService.GetUserTokens(userID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"success": false, "error": "Google account not connected for this user"})
+		return
+	}
 
-    // Initialize CalendarService with credentials from env JSON
-    creds := os.Getenv("GOOGLE_CALENDAR_CREDENTIALS_JSON")
-    if creds == "" {
-        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Calendar credentials not configured"})
-        return
-    }
-    calService, err := services.NewCalendarService([]byte(creds))
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to init calendar service: " + err.Error()})
-        return
-    }
-    if err := calService.InitializeWithToken(token); err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to authorize calendar: " + err.Error()})
-        return
-    }
+	// Initialize CalendarService with credentials from env JSON
+	creds := os.Getenv("GOOGLE_CALENDAR_CREDENTIALS_JSON")
+	if creds == "" {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Calendar credentials not configured"})
+		return
+	}
+	calService, err := services.NewCalendarService([]byte(creds))
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to init calendar service: " + err.Error()})
+		return
+	}
+	if err := calService.InitializeWithToken(token); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to authorize calendar: " + err.Error()})
+		return
+	}
 
-    // Build event with accurate start/end and chama name in title
-    title := fmt.Sprintf("%s — %s", meeting.Title, chamaName)
-    desc := meeting.Description
-    if meeting.MeetingURL != "" {
-        desc = fmt.Sprintf("%s\n\nJoin: %s", desc, meeting.MeetingURL)
-    }
+	// Build event with accurate start/end and chama name in title
+	title := fmt.Sprintf("%s — %s", meeting.Title, chamaName)
+	desc := meeting.Description
+	if meeting.MeetingURL != "" {
+		desc = fmt.Sprintf("%s\n\nJoin: %s", desc, meeting.MeetingURL)
+	}
 
-    ev := &services.CalendarEvent{
-        Title:       title,
-        Description: desc,
-        StartTime:   meeting.ScheduledAt,
-        EndTime:     meeting.ScheduledAt.Add(time.Duration(max(1, meeting.Duration)) * time.Minute),
-        Location:    meeting.Location,
-        MeetingURL:  meeting.MeetingURL,
-    }
+	ev := &services.CalendarEvent{
+		Title:       title,
+		Description: desc,
+		StartTime:   meeting.ScheduledAt,
+		EndTime:     meeting.ScheduledAt.Add(time.Duration(max(1, meeting.Duration)) * time.Minute),
+		Location:    meeting.Location,
+		MeetingURL:  meeting.MeetingURL,
+	}
 
-    // Use primary calendar and reminders 30,10,0 minutes
-    created, err := calService.CreateEventWithReminders("primary", ev, []int{30, 10, 0})
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to create calendar event: " + err.Error()})
-        return
-    }
+	// Use primary calendar and reminders 30,10,0 minutes
+	created, err := calService.CreateEventWithReminders("primary", ev, []int{30, 10, 0})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"success": false, "error": "Failed to create calendar event: " + err.Error()})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"eventId": created.Id, "htmlLink": created.HtmlLink}})
+	c.JSON(http.StatusOK, gin.H{"success": true, "data": gin.H{"eventId": created.Id, "htmlLink": created.HtmlLink}})
 }
 
 // JoinMeetingWithLiveKit generates a LiveKit access token for joining a meeting
@@ -1942,98 +1942,98 @@ func SaveMeetingMinutes(c *gin.Context) {
 
 // UpdateMeetingMinutes updates meeting minutes fields (content/status). If minutes do not exist, creates them.
 func UpdateMeetingMinutes(c *gin.Context) {
-    meetingID := c.Param("id")
-    if meetingID == "" {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Meeting ID is required",
-        })
-        return
-    }
+	meetingID := c.Param("id")
+	if meetingID == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Meeting ID is required",
+		})
+		return
+	}
 
-    // Get user ID from context
-    userID, exists := c.Get("userID")
-    if !exists {
-        c.JSON(http.StatusUnauthorized, gin.H{
-            "success": false,
-            "error":   "User not authenticated",
-        })
-        return
-    }
+	// Get user ID from context
+	userID, exists := c.Get("userID")
+	if !exists {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"success": false,
+			"error":   "User not authenticated",
+		})
+		return
+	}
 
-    var req struct {
-        Content string `json:"content"`
-        Status  string `json:"status"`
-    }
+	var req struct {
+		Content string `json:"content"`
+		Status  string `json:"status"`
+	}
 
-    if err := c.ShouldBindJSON(&req); err != nil {
-        c.JSON(http.StatusBadRequest, gin.H{
-            "success": false,
-            "error":   "Invalid request data: " + err.Error(),
-        })
-        return
-    }
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"success": false,
+			"error":   "Invalid request data: " + err.Error(),
+		})
+		return
+	}
 
-    // Default status if omitted
-    if req.Status == "" {
-        req.Status = "draft"
-    }
+	// Default status if omitted
+	if req.Status == "" {
+		req.Status = "draft"
+	}
 
-    // Get database connection
-    db, exists := c.Get("db")
-    if !exists {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "success": false,
-            "error":   "Database connection not available",
-        })
-        return
-    }
+	// Get database connection
+	db, exists := c.Get("db")
+	if !exists {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Database connection not available",
+		})
+		return
+	}
 
-    // Check if minutes exist
-    var existingID string
-    err := db.(*sql.DB).QueryRow(`
+	// Check if minutes exist
+	var existingID string
+	err := db.(*sql.DB).QueryRow(`
         SELECT id FROM meeting_minutes WHERE meeting_id = ?
     `, meetingID).Scan(&existingID)
 
-    if err == sql.ErrNoRows {
-        // Create if not exists
-        minutesID := uuid.New().String()
-        _, err = db.(*sql.DB).Exec(`
+	if err == sql.ErrNoRows {
+		// Create if not exists
+		minutesID := uuid.New().String()
+		_, err = db.(*sql.DB).Exec(`
             INSERT INTO meeting_minutes (
                 id, meeting_id, content, status, taken_by, created_at, updated_at
             ) VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
         `, minutesID, meetingID, req.Content, req.Status, userID)
-        if err != nil {
-            c.JSON(http.StatusInternalServerError, gin.H{
-                "success": false,
-                "error":   "Failed to create meeting minutes: " + err.Error(),
-            })
-            return
-        }
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"success": false,
+				"error":   "Failed to create meeting minutes: " + err.Error(),
+			})
+			return
+		}
 
-        c.JSON(http.StatusCreated, gin.H{
-            "success": true,
-            "message": "Meeting minutes created",
-            "data": map[string]interface{}{
-                "id":        minutesID,
-                "meetingId": meetingID,
-                "content":   req.Content,
-                "status":    req.Status,
-                "takenBy":   userID,
-                "createdAt": time.Now().Format(time.RFC3339),
-            },
-        })
-        return
-    } else if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "success": false,
-            "error":   "Failed to check existing minutes: " + err.Error(),
-        })
-        return
-    }
+		c.JSON(http.StatusCreated, gin.H{
+			"success": true,
+			"message": "Meeting minutes created",
+			"data": map[string]interface{}{
+				"id":        minutesID,
+				"meetingId": meetingID,
+				"content":   req.Content,
+				"status":    req.Status,
+				"takenBy":   userID,
+				"createdAt": time.Now().Format(time.RFC3339),
+			},
+		})
+		return
+	} else if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to check existing minutes: " + err.Error(),
+		})
+		return
+	}
 
-    // Update existing
-    _, err = db.(*sql.DB).Exec(`
+	// Update existing
+	_, err = db.(*sql.DB).Exec(`
         UPDATE meeting_minutes
         SET content = COALESCE(NULLIF(?, ''), content),
             status = ?,
@@ -2041,26 +2041,26 @@ func UpdateMeetingMinutes(c *gin.Context) {
             updated_at = CURRENT_TIMESTAMP
         WHERE id = ?
     `, req.Content, req.Status, userID, existingID)
-    if err != nil {
-        c.JSON(http.StatusInternalServerError, gin.H{
-            "success": false,
-            "error":   "Failed to update meeting minutes: " + err.Error(),
-        })
-        return
-    }
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"error":   "Failed to update meeting minutes: " + err.Error(),
+		})
+		return
+	}
 
-    c.JSON(http.StatusOK, gin.H{
-        "success": true,
-        "message": "Meeting minutes updated",
-        "data": map[string]interface{}{
-            "id":        existingID,
-            "meetingId": meetingID,
-            "content":   req.Content,
-            "status":    req.Status,
-            "takenBy":   userID,
-            "updatedAt": time.Now().Format(time.RFC3339),
-        },
-    })
+	c.JSON(http.StatusOK, gin.H{
+		"success": true,
+		"message": "Meeting minutes updated",
+		"data": map[string]interface{}{
+			"id":        existingID,
+			"meetingId": meetingID,
+			"content":   req.Content,
+			"status":    req.Status,
+			"takenBy":   userID,
+			"updatedAt": time.Now().Format(time.RFC3339),
+		},
+	})
 }
 
 // GetMeetingMinutes retrieves meeting minutes

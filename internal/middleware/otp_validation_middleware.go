@@ -79,7 +79,7 @@ func (m *OTPValidationMiddleware) ValidateEmailVerificationToken() gin.HandlerFu
 		if time.Now().After(expiresAt) {
 			// Clean up expired token
 			m.db.Exec("DELETE FROM email_verification_tokens WHERE token = ?", req.Token)
-			
+
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"error":   "Token has expired. Please request a new verification email.",
@@ -92,7 +92,7 @@ func (m *OTPValidationMiddleware) ValidateEmailVerificationToken() gin.HandlerFu
 		if trialCount >= 3 {
 			// Clean up token with too many attempts
 			m.db.Exec("DELETE FROM email_verification_tokens WHERE token = ?", req.Token)
-			
+
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"error":   "Maximum verification attempts exceeded. Please request a new verification email.",
@@ -170,7 +170,7 @@ func (m *OTPValidationMiddleware) ValidatePasswordResetToken() gin.HandlerFunc {
 		if time.Now().After(expiresAt) {
 			// Clean up expired token
 			m.db.Exec("DELETE FROM password_reset_tokens WHERE token = ?", req.Token)
-			
+
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"error":   "Token has expired. Please request a new password reset.",
@@ -183,7 +183,7 @@ func (m *OTPValidationMiddleware) ValidatePasswordResetToken() gin.HandlerFunc {
 		if trialCount >= 3 {
 			// Clean up token with too many attempts
 			m.db.Exec("DELETE FROM password_reset_tokens WHERE token = ?", req.Token)
-			
+
 			c.JSON(http.StatusBadRequest, gin.H{
 				"success": false,
 				"error":   "Maximum reset attempts exceeded. Please request a new password reset.",
@@ -210,7 +210,7 @@ func (m *OTPValidationMiddleware) IncrementTrialCount(tableName, token string) e
 		SET trial_count = trial_count + 1 
 		WHERE token = ?
 	`, tableName)
-	
+
 	_, err := m.db.Exec(query, token)
 	return err
 }
@@ -240,7 +240,7 @@ func (m *OTPValidationMiddleware) GetTokenStatus(tableName, token string) (map[s
 	}
 
 	now := time.Now()
-	
+
 	// Check if expired
 	if now.After(expiresAt) {
 		return map[string]interface{}{
@@ -267,15 +267,15 @@ func (m *OTPValidationMiddleware) GetTokenStatus(tableName, token string) (map[s
 
 	// Calculate remaining time
 	remainingSeconds := int(expiresAt.Sub(now).Seconds())
-	
+
 	return map[string]interface{}{
-		"valid":            true,
-		"user_id":          userID,
+		"valid":             true,
+		"user_id":           userID,
 		"remaining_seconds": remainingSeconds,
-		"trial_count":      trialCount,
-		"max_trials":       3,
-		"expires_at":       expiresAt.Unix(),
-		"created_at":       createdAt.Unix(),
+		"trial_count":       trialCount,
+		"max_trials":        3,
+		"expires_at":        expiresAt.Unix(),
+		"created_at":        createdAt.Unix(),
 	}, nil
 }
 
@@ -285,11 +285,11 @@ func (m *OTPValidationMiddleware) CleanupExpiredTokens(tableName string) (int64,
 		DELETE FROM %s 
 		WHERE expires_at < ? OR used = TRUE
 	`, tableName)
-	
+
 	result, err := m.db.Exec(query, time.Now())
 	if err != nil {
 		return 0, err
 	}
-	
+
 	return result.RowsAffected()
 }

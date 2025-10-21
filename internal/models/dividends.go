@@ -43,27 +43,27 @@ type DividendDeclaration struct {
 // DividendDeclarationWithDetails represents dividend declaration with additional details
 type DividendDeclarationWithDetails struct {
 	DividendDeclaration
-	DeclaredByName    string `json:"declaredByName"`
-	ApprovedByName    *string `json:"approvedByName,omitempty"`
-	TotalEligibleShares int   `json:"totalEligibleShares"`
-	TotalRecipients   int    `json:"totalRecipients"`
-	PaidAmount        float64 `json:"paidAmount"`
-	PendingAmount     float64 `json:"pendingAmount"`
+	DeclaredByName      string  `json:"declaredByName"`
+	ApprovedByName      *string `json:"approvedByName,omitempty"`
+	TotalEligibleShares int     `json:"totalEligibleShares"`
+	TotalRecipients     int     `json:"totalRecipients"`
+	PaidAmount          float64 `json:"paidAmount"`
+	PendingAmount       float64 `json:"pendingAmount"`
 }
 
 // DividendPayment represents an individual dividend payment to a member
 type DividendPayment struct {
-	ID                     string                `json:"id" db:"id"`
-	DividendDeclarationID  string                `json:"dividendDeclarationId" db:"dividend_declaration_id"`
-	MemberID               string                `json:"memberId" db:"member_id"`
-	SharesEligible         int                   `json:"sharesEligible" db:"shares_eligible"`
-	DividendAmount         float64               `json:"dividendAmount" db:"dividend_amount"`
-	PaymentStatus          DividendPaymentStatus `json:"paymentStatus" db:"payment_status"`
-	PaymentDate            *time.Time            `json:"paymentDate,omitempty" db:"payment_date"`
-	PaymentMethod          *string               `json:"paymentMethod,omitempty" db:"payment_method"`
-	TransactionReference   *string               `json:"transactionReference,omitempty" db:"transaction_reference"`
-	CreatedAt              time.Time             `json:"createdAt" db:"created_at"`
-	UpdatedAt              time.Time             `json:"updatedAt" db:"updated_at"`
+	ID                    string                `json:"id" db:"id"`
+	DividendDeclarationID string                `json:"dividendDeclarationId" db:"dividend_declaration_id"`
+	MemberID              string                `json:"memberId" db:"member_id"`
+	SharesEligible        int                   `json:"sharesEligible" db:"shares_eligible"`
+	DividendAmount        float64               `json:"dividendAmount" db:"dividend_amount"`
+	PaymentStatus         DividendPaymentStatus `json:"paymentStatus" db:"payment_status"`
+	PaymentDate           *time.Time            `json:"paymentDate,omitempty" db:"payment_date"`
+	PaymentMethod         *string               `json:"paymentMethod,omitempty" db:"payment_method"`
+	TransactionReference  *string               `json:"transactionReference,omitempty" db:"transaction_reference"`
+	CreatedAt             time.Time             `json:"createdAt" db:"created_at"`
+	UpdatedAt             time.Time             `json:"updatedAt" db:"updated_at"`
 }
 
 // DividendPaymentWithMemberInfo represents dividend payment with member details
@@ -94,30 +94,30 @@ type UpdateDividendDeclarationRequest struct {
 
 // ProcessDividendPaymentsRequest represents the request to process dividend payments
 type ProcessDividendPaymentsRequest struct {
-	PaymentMethod string `json:"paymentMethod" binding:"required,oneof=bank_transfer mobile_money cash"`
+	PaymentMethod string     `json:"paymentMethod" binding:"required,oneof=bank_transfer mobile_money cash"`
 	PaymentDate   *time.Time `json:"paymentDate,omitempty"`
 }
 
 // DividendSummary represents dividend summary for a member
 type DividendSummary struct {
-	MemberID           string  `json:"memberId"`
-	MemberName         string  `json:"memberName"`
-	TotalDividendsEarned float64 `json:"totalDividendsEarned"`
-	TotalDividendsPaid   float64 `json:"totalDividendsPaid"`
-	PendingDividends     float64 `json:"pendingDividends"`
-	LastDividendDate     *time.Time `json:"lastDividendDate,omitempty"`
+	MemberID             string            `json:"memberId"`
+	MemberName           string            `json:"memberName"`
+	TotalDividendsEarned float64           `json:"totalDividendsEarned"`
+	TotalDividendsPaid   float64           `json:"totalDividendsPaid"`
+	PendingDividends     float64           `json:"pendingDividends"`
+	LastDividendDate     *time.Time        `json:"lastDividendDate,omitempty"`
 	DividendHistory      []DividendPayment `json:"dividendHistory"`
 }
 
 // ChamaDividendSummary represents dividend summary for a chama
 type ChamaDividendSummary struct {
-	ChamaID              string    `json:"chamaId"`
-	TotalDividendsDeclared float64 `json:"totalDividendsDeclared"`
-	TotalDividendsPaid     float64 `json:"totalDividendsPaid"`
-	PendingDividends       float64 `json:"pendingDividends"`
+	ChamaID                string     `json:"chamaId"`
+	TotalDividendsDeclared float64    `json:"totalDividendsDeclared"`
+	TotalDividendsPaid     float64    `json:"totalDividendsPaid"`
+	PendingDividends       float64    `json:"pendingDividends"`
 	LastDeclarationDate    *time.Time `json:"lastDeclarationDate,omitempty"`
-	ActiveDeclarations     int       `json:"activeDeclarations"`
-	TotalDeclarations      int       `json:"totalDeclarations"`
+	ActiveDeclarations     int        `json:"activeDeclarations"`
+	TotalDeclarations      int        `json:"totalDeclarations"`
 }
 
 // DividendResponse represents the response structure for dividend operations

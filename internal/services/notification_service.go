@@ -48,18 +48,18 @@ const (
 
 // Notification represents a notification
 type Notification struct {
-	ID          string           `json:"id" db:"id"`
-	UserID      string           `json:"userId" db:"user_id"`
-	Type        NotificationType `json:"type" db:"type"`
-	Title       string           `json:"title" db:"title"`
-	Message     string           `json:"message" db:"message"`
-	Data        string           `json:"data" db:"data"`
-	IsRead      bool             `json:"isRead" db:"is_read"`
-	IsPush      bool             `json:"isPush" db:"is_push"`
-	IsEmail     bool             `json:"isEmail" db:"is_email"`
-	IsSMS       bool             `json:"isSMS" db:"is_sms"`
-	CreatedAt   time.Time        `json:"createdAt" db:"created_at"`
-	ReadAt      *time.Time       `json:"readAt,omitempty" db:"read_at"`
+	ID        string           `json:"id" db:"id"`
+	UserID    string           `json:"userId" db:"user_id"`
+	Type      NotificationType `json:"type" db:"type"`
+	Title     string           `json:"title" db:"title"`
+	Message   string           `json:"message" db:"message"`
+	Data      string           `json:"data" db:"data"`
+	IsRead    bool             `json:"isRead" db:"is_read"`
+	IsPush    bool             `json:"isPush" db:"is_push"`
+	IsEmail   bool             `json:"isEmail" db:"is_email"`
+	IsSMS     bool             `json:"isSMS" db:"is_sms"`
+	CreatedAt time.Time        `json:"createdAt" db:"created_at"`
+	ReadAt    *time.Time       `json:"readAt,omitempty" db:"read_at"`
 }
 
 // FCMMessage represents Firebase Cloud Messaging message
@@ -177,7 +177,7 @@ func (s *NotificationService) GetUserNotifications(userID string, limit, offset 
 func (s *NotificationService) MarkAsRead(userID, notificationID string) error {
 	now := time.Now()
 	query := "UPDATE notifications SET is_read = true, read_at = ? WHERE id = ? AND user_id = ?"
-	
+
 	result, err := s.db.Exec(query, now, notificationID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to mark notification as read: %w", err)
@@ -199,7 +199,7 @@ func (s *NotificationService) MarkAsRead(userID, notificationID string) error {
 func (s *NotificationService) MarkAllAsRead(userID string) error {
 	now := time.Now()
 	query := "UPDATE notifications SET is_read = true, read_at = ? WHERE user_id = ? AND is_read = false"
-	
+
 	_, err := s.db.Exec(query, now, userID)
 	if err != nil {
 		return fmt.Errorf("failed to mark all notifications as read: %w", err)
@@ -211,7 +211,7 @@ func (s *NotificationService) MarkAllAsRead(userID string) error {
 // GetUnreadCount gets the count of unread notifications for a user
 func (s *NotificationService) GetUnreadCount(userID string) (int, error) {
 	query := "SELECT COUNT(*) FROM notifications WHERE user_id = ? AND is_read = false"
-	
+
 	var count int
 	err := s.db.QueryRow(query, userID).Scan(&count)
 	if err != nil {
@@ -224,7 +224,7 @@ func (s *NotificationService) GetUnreadCount(userID string) (int, error) {
 // DeleteNotification deletes a notification
 func (s *NotificationService) DeleteNotification(userID, notificationID string) error {
 	query := "DELETE FROM notifications WHERE id = ? AND user_id = ?"
-	
+
 	result, err := s.db.Exec(query, notificationID, userID)
 	if err != nil {
 		return fmt.Errorf("failed to delete notification: %w", err)
@@ -331,10 +331,10 @@ func (s *NotificationService) sendSMSNotification(userID, message string) {
 func (s *NotificationService) NotifyTransactionComplete(userID string, amount float64, transactionType string) error {
 	title := "Transaction Complete"
 	message := fmt.Sprintf("Your %s of KSh %.2f has been completed successfully", transactionType, amount)
-	
+
 	data := map[string]interface{}{
-		"type":   "transaction",
-		"amount": amount,
+		"type":            "transaction",
+		"amount":          amount,
 		"transactionType": transactionType,
 	}
 
@@ -346,10 +346,10 @@ func (s *NotificationService) NotifyTransactionComplete(userID string, amount fl
 func (s *NotificationService) NotifyChamaInvitation(userID, chamaName, inviterName string) error {
 	title := "Chama Invitation"
 	message := fmt.Sprintf("%s has invited you to join %s chama", inviterName, chamaName)
-	
+
 	data := map[string]interface{}{
-		"type": "chama_invitation",
-		"chamaName": chamaName,
+		"type":        "chama_invitation",
+		"chamaName":   chamaName,
 		"inviterName": inviterName,
 	}
 
@@ -361,10 +361,10 @@ func (s *NotificationService) NotifyChamaInvitation(userID, chamaName, inviterNa
 func (s *NotificationService) NotifyMeetingReminder(userID, chamaName string, meetingTime time.Time) error {
 	title := "Meeting Reminder"
 	message := fmt.Sprintf("You have a %s chama meeting in 1 hour", chamaName)
-	
+
 	data := map[string]interface{}{
-		"type": "meeting_reminder",
-		"chamaName": chamaName,
+		"type":        "meeting_reminder",
+		"chamaName":   chamaName,
 		"meetingTime": meetingTime.Format(time.RFC3339),
 	}
 
@@ -376,7 +376,7 @@ func (s *NotificationService) NotifyMeetingReminder(userID, chamaName string, me
 // func (s *NotificationService) NotifyOrderStatusUpdate(userID, orderID string, status models.OrderStatus) error {
 // 	title := "Order Update"
 // 	message := fmt.Sprintf("Your order #%s is now %s", orderID[:8], status)
-	
+
 // 	data := map[string]interface{}{
 // 		"type": "order_update",
 // 		"orderId": orderID,
@@ -390,7 +390,7 @@ func (s *NotificationService) NotifyMeetingReminder(userID, chamaName string, me
 // NotifyLoanApproval sends loan approval notification
 func (s *NotificationService) NotifyLoanApproval(userID string, amount float64, approved bool) error {
 	var title, message string
-	
+
 	if approved {
 		title = "Loan Approved"
 		message = fmt.Sprintf("Your loan application for KSh %.2f has been approved", amount)
@@ -398,10 +398,10 @@ func (s *NotificationService) NotifyLoanApproval(userID string, amount float64, 
 		title = "Loan Declined"
 		message = fmt.Sprintf("Your loan application for KSh %.2f has been declined", amount)
 	}
-	
+
 	data := map[string]interface{}{
-		"type": "loan_decision",
-		"amount": amount,
+		"type":     "loan_decision",
+		"amount":   amount,
 		"approved": approved,
 	}
 

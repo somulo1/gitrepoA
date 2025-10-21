@@ -40,12 +40,12 @@ type CreateReminderRequest struct {
 
 // UpdateReminderRequest represents the request to update a reminder
 type UpdateReminderRequest struct {
-	Title        *string      `json:"title,omitempty" binding:"omitempty,min=1,max=100"`
-	Description  *string      `json:"description,omitempty" binding:"omitempty,max=500"`
+	Title        *string       `json:"title,omitempty" binding:"omitempty,min=1,max=100"`
+	Description  *string       `json:"description,omitempty" binding:"omitempty,max=500"`
 	ReminderType *ReminderType `json:"reminderType,omitempty" binding:"omitempty,oneof=once daily weekly monthly"`
-	ScheduledAt  *time.Time   `json:"scheduledAt,omitempty"`
-	IsEnabled    *bool        `json:"isEnabled,omitempty"`
-	IsCompleted  *bool        `json:"isCompleted,omitempty"`
+	ScheduledAt  *time.Time    `json:"scheduledAt,omitempty"`
+	IsEnabled    *bool         `json:"isEnabled,omitempty"`
+	IsCompleted  *bool         `json:"isCompleted,omitempty"`
 }
 
 // ReminderResponse represents the response structure for reminder operations
@@ -126,7 +126,7 @@ func (r *Reminder) ShouldSendNotification() bool {
 	}
 
 	now := time.Now()
-	
+
 	// For one-time reminders, check if the scheduled time has passed and notification hasn't been sent
 	if r.ReminderType == ReminderTypeOnce {
 		return now.After(r.ScheduledAt) && !r.NotificationSent

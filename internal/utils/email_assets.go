@@ -45,9 +45,9 @@ func GetVaultKeIconSVG() string {
 func GetVaultKeIconDataURL() string {
 	// Use the Imgur-hosted VaultKe icon directly - try different quality options
 	possibleURLs := []string{
-		"https://i.imgur.com/XdVwni7.png",    // Original
-		"https://imgur.com/XdVwni7.png",      // Alternative format
-		"https://i.imgur.com/XdVwni7h.png",   // High quality version
+		"https://i.imgur.com/XdVwni7.png",  // Original
+		"https://imgur.com/XdVwni7.png",    // Alternative format
+		"https://i.imgur.com/XdVwni7h.png", // High quality version
 	}
 
 	// Return the first URL (can be enhanced with URL validation later)

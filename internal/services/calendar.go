@@ -93,7 +93,7 @@ func (cs *CalendarService) CreateEvent(calendarID string, event *CalendarEvent) 
 	// Add meeting URL to description if provided
 	if event.MeetingURL != "" {
 		calendarEvent.Description += fmt.Sprintf("\n\nJoin meeting: %s", event.MeetingURL)
-		
+
 		// Add conference data for Google Meet integration
 		calendarEvent.ConferenceData = &calendar.ConferenceData{
 			CreateRequest: &calendar.CreateConferenceRequest{
@@ -114,48 +114,48 @@ func (cs *CalendarService) CreateEvent(calendarID string, event *CalendarEvent) 
 
 // CreateEventWithReminders creates a calendar event with explicit reminder overrides
 func (cs *CalendarService) CreateEventWithReminders(calendarID string, event *CalendarEvent, reminderMinutes []int) (*calendar.Event, error) {
-    if cs.service == nil {
-        return nil, fmt.Errorf("calendar service not initialized")
-    }
+	if cs.service == nil {
+		return nil, fmt.Errorf("calendar service not initialized")
+	}
 
-    // Convert attendees to calendar attendees
-    var attendees []*calendar.EventAttendee
-    for _, email := range event.Attendees {
-        attendees = append(attendees, &calendar.EventAttendee{Email: email})
-    }
+	// Convert attendees to calendar attendees
+	var attendees []*calendar.EventAttendee
+	for _, email := range event.Attendees {
+		attendees = append(attendees, &calendar.EventAttendee{Email: email})
+	}
 
-    // Build reminder overrides
-    var overrides []*calendar.EventReminder
-    for _, m := range reminderMinutes {
-        overrides = append(overrides, &calendar.EventReminder{Method: "popup", Minutes: int64(m)})
-    }
+	// Build reminder overrides
+	var overrides []*calendar.EventReminder
+	for _, m := range reminderMinutes {
+		overrides = append(overrides, &calendar.EventReminder{Method: "popup", Minutes: int64(m)})
+	}
 
-    // Use East Africa Time (EAT)
-    eat, _ := time.LoadLocation("Africa/Nairobi")
+	// Use East Africa Time (EAT)
+	eat, _ := time.LoadLocation("Africa/Nairobi")
 
-    calendarEvent := &calendar.Event{
-        Summary:     event.Title,
-        Description: event.Description,
-        Location:    event.Location,
-        Start: &calendar.EventDateTime{DateTime: event.StartTime.In(eat).Format(time.RFC3339), TimeZone: "Africa/Nairobi"},
-        End:   &calendar.EventDateTime{DateTime: event.EndTime.In(eat).Format(time.RFC3339), TimeZone: "Africa/Nairobi"},
-        Attendees:   attendees,
-        Reminders: &calendar.EventReminders{
-            UseDefault: false,
-            Overrides:  overrides,
-        },
-    }
+	calendarEvent := &calendar.Event{
+		Summary:     event.Title,
+		Description: event.Description,
+		Location:    event.Location,
+		Start:       &calendar.EventDateTime{DateTime: event.StartTime.In(eat).Format(time.RFC3339), TimeZone: "Africa/Nairobi"},
+		End:         &calendar.EventDateTime{DateTime: event.EndTime.In(eat).Format(time.RFC3339), TimeZone: "Africa/Nairobi"},
+		Attendees:   attendees,
+		Reminders: &calendar.EventReminders{
+			UseDefault: false,
+			Overrides:  overrides,
+		},
+	}
 
-    if event.MeetingURL != "" {
-        calendarEvent.Description += fmt.Sprintf("\n\nJoin meeting: %s", event.MeetingURL)
-    }
+	if event.MeetingURL != "" {
+		calendarEvent.Description += fmt.Sprintf("\n\nJoin meeting: %s", event.MeetingURL)
+	}
 
-    createdEvent, err := cs.service.Events.Insert(calendarID, calendarEvent).Do()
-    if err != nil {
-        return nil, fmt.Errorf("failed to create calendar event with reminders: %w", err)
-    }
-    log.Printf("Created calendar event with reminders: %s (ID: %s)", createdEvent.Summary, createdEvent.Id)
-    return createdEvent, nil
+	createdEvent, err := cs.service.Events.Insert(calendarID, calendarEvent).Do()
+	if err != nil {
+		return nil, fmt.Errorf("failed to create calendar event with reminders: %w", err)
+	}
+	log.Printf("Created calendar event with reminders: %s (ID: %s)", createdEvent.Summary, createdEvent.Id)
+	return createdEvent, nil
 }
 
 // UpdateEvent updates an existing calendar event

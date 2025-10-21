@@ -127,7 +127,6 @@ func TestConfigLoading(t *testing.T) {
 		assert.Equal(t, "123456", cfg.MpesaShortcode)
 	})
 
-
 	t.Run("ConfigGoogleSettings", func(t *testing.T) {
 		// Set Google environment variables
 		os.Setenv("GOOGLE_CLIENT_ID", "test-client-id")

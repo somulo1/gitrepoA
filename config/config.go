@@ -56,7 +56,6 @@ type Config struct {
 	AllowedFileTypes []string
 	UploadPath       string
 
-
 	// Google OAuth Configuration
 	GoogleClientID     string
 	GoogleClientSecret string
@@ -75,7 +74,7 @@ type Config struct {
 	LogFile  string
 
 	// CORS Configuration
-	AllowedOrigins []string
+	AllowedOrigins  []string
 	AllowAllOrigins bool
 
 	// Metrics and Monitoring Configuration
@@ -138,7 +137,6 @@ func Load() *Config {
 		MaxFileSize:      getEnvAsInt64("MAX_FILE_SIZE", 5*1024*1024), // 5MB
 		AllowedFileTypes: []string{"image/jpeg", "image/png", "image/webp"},
 		UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
-
 
 		// Google OAuth Configuration
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),

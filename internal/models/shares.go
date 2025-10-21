@@ -47,12 +47,12 @@ type ShareWithMemberInfo struct {
 
 // ShareSummary represents aggregated share information for a member
 type ShareSummary struct {
-	MemberID       string  `json:"memberId"`
-	MemberName     string  `json:"memberName"`
-	TotalShares    int     `json:"totalShares"`
-	TotalValue     float64 `json:"totalValue"`
-	ShareTypes     []Share `json:"shareTypes"`
-	LastPurchase   *time.Time `json:"lastPurchase,omitempty"`
+	MemberID     string     `json:"memberId"`
+	MemberName   string     `json:"memberName"`
+	TotalShares  int        `json:"totalShares"`
+	TotalValue   float64    `json:"totalValue"`
+	ShareTypes   []Share    `json:"shareTypes"`
+	LastPurchase *time.Time `json:"lastPurchase,omitempty"`
 }
 
 // ShareOffering represents a share offering created by a chama
@@ -91,43 +91,43 @@ type CreateShareRequest struct {
 
 // BuySharesRequest represents the request to buy shares from an offering
 type BuySharesRequest struct {
-	OfferingID    string  `json:"offeringId" binding:"required"`
-	ShareType     string  `json:"shareType" binding:"required,oneof=ordinary preferred founder"`
-	Quantity      int     `json:"quantity" binding:"required,min=1"`
-	PricePerShare float64 `json:"pricePerShare" binding:"required,min=0"`
-	TotalAmount   float64 `json:"totalAmount" binding:"required,min=0"`
-	PaymentMethod string  `json:"paymentMethod" binding:"required,oneof=wallet mpesa mobile_money bank_transfer cash"`
-	Notes         *string `json:"notes,omitempty"`
+	OfferingID    string    `json:"offeringId" binding:"required"`
+	ShareType     string    `json:"shareType" binding:"required,oneof=ordinary preferred founder"`
+	Quantity      int       `json:"quantity" binding:"required,min=1"`
+	PricePerShare float64   `json:"pricePerShare" binding:"required,min=0"`
+	TotalAmount   float64   `json:"totalAmount" binding:"required,min=0"`
+	PaymentMethod string    `json:"paymentMethod" binding:"required,oneof=wallet mpesa mobile_money bank_transfer cash"`
+	Notes         *string   `json:"notes,omitempty"`
 	PurchaseDate  time.Time `json:"purchaseDate" binding:"required"`
 }
 
 // BuyDividendsRequest represents the request to buy dividend certificates
 type BuyDividendsRequest struct {
-	DeclarationID string  `json:"declarationId" binding:"required"`
-	Quantity      int     `json:"quantity" binding:"required,min=1"`
-	PricePerShare float64 `json:"pricePerShare" binding:"required,min=0"`
-	TotalAmount   float64 `json:"totalAmount" binding:"required,min=0"`
-	PaymentMethod string  `json:"paymentMethod" binding:"required,oneof=wallet mpesa mobile_money bank_transfer cash"`
-	Notes         *string `json:"notes,omitempty"`
+	DeclarationID string    `json:"declarationId" binding:"required"`
+	Quantity      int       `json:"quantity" binding:"required,min=1"`
+	PricePerShare float64   `json:"pricePerShare" binding:"required,min=0"`
+	TotalAmount   float64   `json:"totalAmount" binding:"required,min=0"`
+	PaymentMethod string    `json:"paymentMethod" binding:"required,oneof=wallet mpesa mobile_money bank_transfer cash"`
+	Notes         *string   `json:"notes,omitempty"`
 	PurchaseDate  time.Time `json:"purchaseDate" binding:"required"`
 }
 
 // TransferSharesRequest represents the request to transfer shares between members
 type TransferSharesRequest struct {
-	ShareID       string  `json:"shareId" binding:"required"`        // ID of the share record to transfer
-	ToMemberID    string  `json:"toMemberId" binding:"required"`     // Member receiving the shares
-	SharesCount   int     `json:"sharesCount" binding:"required,min=1"` // Number of shares to transfer
-	TransferPrice float64 `json:"transferPrice" binding:"required,min=0"` // Price per share for the transfer
-	TotalAmount   float64 `json:"totalAmount" binding:"required,min=0"`   // Total amount for the transfer
-	Notes         *string `json:"notes,omitempty"`                    // Optional notes about the transfer
-	TransferDate  time.Time `json:"transferDate" binding:"required"` // Date of the transfer
+	ShareID       string    `json:"shareId" binding:"required"`             // ID of the share record to transfer
+	ToMemberID    string    `json:"toMemberId" binding:"required"`          // Member receiving the shares
+	SharesCount   int       `json:"sharesCount" binding:"required,min=1"`   // Number of shares to transfer
+	TransferPrice float64   `json:"transferPrice" binding:"required,min=0"` // Price per share for the transfer
+	TotalAmount   float64   `json:"totalAmount" binding:"required,min=0"`   // Total amount for the transfer
+	Notes         *string   `json:"notes,omitempty"`                        // Optional notes about the transfer
+	TransferDate  time.Time `json:"transferDate" binding:"required"`        // Date of the transfer
 }
 
 // UpdateShareRequest represents the request to update shares
 type UpdateShareRequest struct {
-	SharesOwned       *int        `json:"sharesOwned,omitempty" binding:"omitempty,min=0"`
-	ShareValue        *float64    `json:"shareValue,omitempty" binding:"omitempty,min=0"`
-	CertificateNumber *string     `json:"certificateNumber,omitempty"`
+	SharesOwned       *int         `json:"sharesOwned,omitempty" binding:"omitempty,min=0"`
+	ShareValue        *float64     `json:"shareValue,omitempty" binding:"omitempty,min=0"`
+	CertificateNumber *string      `json:"certificateNumber,omitempty"`
 	Status            *ShareStatus `json:"status,omitempty" binding:"omitempty,oneof=active transferred redeemed"`
 }
 
@@ -164,20 +164,20 @@ const (
 
 // ShareTransaction represents a share transaction
 type ShareTransaction struct {
-	ID             string                  `json:"id" db:"id"`
-	ChamaID        string                  `json:"chamaId" db:"chama_id"`
-	FromMemberID   *string                 `json:"fromMemberId,omitempty" db:"from_member_id"`
-	ToMemberID     *string                 `json:"toMemberId,omitempty" db:"to_member_id"`
+	ID              string                 `json:"id" db:"id"`
+	ChamaID         string                 `json:"chamaId" db:"chama_id"`
+	FromMemberID    *string                `json:"fromMemberId,omitempty" db:"from_member_id"`
+	ToMemberID      *string                `json:"toMemberId,omitempty" db:"to_member_id"`
 	TransactionType ShareTransactionType   `json:"transactionType" db:"transaction_type"`
-	SharesCount    int                     `json:"sharesCount" db:"shares_count"`
-	ShareValue     float64                 `json:"shareValue" db:"share_value"`
-	TotalAmount    float64                 `json:"totalAmount" db:"total_amount"`
+	SharesCount     int                    `json:"sharesCount" db:"shares_count"`
+	ShareValue      float64                `json:"shareValue" db:"share_value"`
+	TotalAmount     float64                `json:"totalAmount" db:"total_amount"`
 	TransactionDate time.Time              `json:"transactionDate" db:"transaction_date"`
-	Status         ShareTransactionStatus  `json:"status" db:"status"`
-	ApprovedBy     *string                 `json:"approvedBy,omitempty" db:"approved_by"`
-	Description    *string                 `json:"description,omitempty" db:"description"`
-	CreatedAt      time.Time               `json:"createdAt" db:"created_at"`
-	UpdatedAt      time.Time               `json:"updatedAt" db:"updated_at"`
+	Status          ShareTransactionStatus `json:"status" db:"status"`
+	ApprovedBy      *string                `json:"approvedBy,omitempty" db:"approved_by"`
+	Description     *string                `json:"description,omitempty" db:"description"`
+	CreatedAt       time.Time              `json:"createdAt" db:"created_at"`
+	UpdatedAt       time.Time              `json:"updatedAt" db:"updated_at"`
 }
 
 // CreateShareTransactionRequest represents the request to create a share transaction

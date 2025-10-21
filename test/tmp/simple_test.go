@@ -109,16 +109,16 @@ func TestSimpleAPIHandlers(t *testing.T) {
 
 	t.Run("CreateChama", func(t *testing.T) {
 		requestBody := map[string]interface{}{
-			"name":                   "Test Chama",
-			"description":            "A test chama",
-			"type":                   "savings",
-			"county":                 "Nairobi",
-			"town":                   "Nairobi",
-			"contributionAmount":     5000.0,
-			"contributionFrequency":  "monthly",
-			"maxMembers":             50,
-			"isPublic":               true,
-			"requiresApproval":       false,
+			"name":                  "Test Chama",
+			"description":           "A test chama",
+			"type":                  "savings",
+			"county":                "Nairobi",
+			"town":                  "Nairobi",
+			"contributionAmount":    5000.0,
+			"contributionFrequency": "monthly",
+			"maxMembers":            50,
+			"isPublic":              true,
+			"requiresApproval":      false,
 		}
 		jsonBody, _ := json.Marshal(requestBody)
 

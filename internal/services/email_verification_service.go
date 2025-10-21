@@ -9,14 +9,14 @@ import (
 
 // EmailVerificationToken represents an email verification token
 type EmailVerificationToken struct {
-	ID           string    `json:"id" db:"id"`
-	UserID       string    `json:"userId" db:"user_id"`
-	Token        string    `json:"token" db:"token"`
-	ExpiresAt    time.Time `json:"expiresAt" db:"expires_at"`
-	Used         bool      `json:"used" db:"used"`
-	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
-	TrialCount   int       `json:"trialCount" db:"trial_count"`
-	SessionID    string    `json:"sessionId" db:"session_id"`
+	ID         string    `json:"id" db:"id"`
+	UserID     string    `json:"userId" db:"user_id"`
+	Token      string    `json:"token" db:"token"`
+	ExpiresAt  time.Time `json:"expiresAt" db:"expires_at"`
+	Used       bool      `json:"used" db:"used"`
+	CreatedAt  time.Time `json:"createdAt" db:"created_at"`
+	TrialCount int       `json:"trialCount" db:"trial_count"`
+	SessionID  string    `json:"sessionId" db:"session_id"`
 }
 
 // EmailVerificationService handles email verification operations
@@ -142,7 +142,7 @@ func (s *EmailVerificationService) generateSessionID() string {
 func (s *EmailVerificationService) scheduleTokenCleanup(tokenID string, expiresAt time.Time) {
 	// Wait until expiry time
 	time.Sleep(time.Until(expiresAt))
-	
+
 	// Delete the expired token
 	query := `DELETE FROM email_verification_tokens WHERE id = ?`
 	_, err := s.db.Exec(query, tokenID)
@@ -306,7 +306,7 @@ func (s *EmailVerificationService) GetTokenStatus(token string) (map[string]inte
 	}
 
 	now := time.Now()
-	
+
 	// Check if expired
 	if now.After(expiresAt) {
 		// Delete expired token
@@ -329,7 +329,7 @@ func (s *EmailVerificationService) GetTokenStatus(token string) (map[string]inte
 
 	// Calculate remaining time
 	remainingSeconds := int(expiresAt.Sub(now).Seconds())
-	
+
 	return map[string]interface{}{
 		"valid":            true,
 		"remainingSeconds": remainingSeconds,
