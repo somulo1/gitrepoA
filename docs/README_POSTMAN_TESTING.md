@@ -40,10 +40,10 @@ go mod tidy
 go run main.go
 ```
 
-The server should start on `http://localhost:8080`
+The server should start on `https://chama-backend-server.vercel.app`
 
 ### Verify Server is Running
-Open your browser and navigate to: `http://localhost:8080/health`
+Open your browser and navigate to: `https://chama-backend-server.vercel.app/health`
 
 Expected response:
 ```json
@@ -64,7 +64,7 @@ Expected response:
 
 | Variable | Initial Value | Current Value |
 |----------|---------------|---------------|
-| `base_url` | `http://localhost:8080` | `http://localhost:8080` |
+| `base_url` | `https://chama-backend-server.vercel.app` | `https://chama-backend-server.vercel.app` |
 | `api_url` | `{{base_url}}/api/v1` | `{{base_url}}/api/v1` |
 | `auth_token` | | (will be set automatically) |
 | `user_id` | | (will be set automatically) |
@@ -764,7 +764,7 @@ for (let i = 0; i < 100; i++) {
 ### Development Environment
 ```json
 {
-  "base_url": "http://localhost:8080",
+  "base_url": "https://chama-backend-server.vercel.app",
   "database_reset": "true",
   "debug_mode": "true"
 }
@@ -837,26 +837,26 @@ For issues or questions, refer to the main project documentation or contact the 
 
 1. **Health Check**:
    ```bash
-   curl http://localhost:8080/health
+   curl https://chama-backend-server.vercel.app/health
    ```
 
 2. **Register User**:
    ```bash
-   curl -X POST http://localhost:8080/api/v1/auth/register \
+   curl -X POST https://chama-backend-server.vercel.app/api/v1/auth/register \
      -H "Content-Type: application/json" \
      -d '{"email":"test@vaultke.com","phone":"+254700000000","firstName":"Test","lastName":"User","password":"TestPassword123!","language":"en"}'
    ```
 
 3. **Login** (save token from response):
    ```bash
-   curl -X POST http://localhost:8080/api/v1/auth/login \
+   curl -X POST https://chama-backend-server.vercel.app/api/v1/auth/login \
      -H "Content-Type: application/json" \
      -d '{"identifier":"test@vaultke.com","password":"TestPassword123!"}'
    ```
 
 4. **Get Profile** (use token from login):
    ```bash
-   curl -X GET http://localhost:8080/api/v1/users/profile \
+   curl -X GET https://chama-backend-server.vercel.app/api/v1/users/profile \
      -H "Authorization: Bearer YOUR_TOKEN_HERE"
    ```
 
@@ -918,7 +918,7 @@ go run main.go
 **Issue**: "Invalid token"
 ```bash
 # Solution: Login again to get fresh token
-curl -X POST http://localhost:8080/api/v1/auth/login \
+curl -X POST https://chama-backend-server.vercel.app/api/v1/auth/login \
   -H "Content-Type: application/json" \
   -d '{"identifier":"test@vaultke.com","password":"TestPassword123!"}'
 ```

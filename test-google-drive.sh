@@ -51,7 +51,7 @@ fi
 # Start the backend
 echo ""
 echo "🚀 Starting backend server..."
-echo "📝 The server will be available at: http://localhost:8080"
+echo "📝 The server will be available at: https://chama-backend-server.vercel.app"
 echo "🔗 Test Google Drive endpoints:"
 echo "   - GET  /api/v1/users/google-drive/status"
 echo "   - POST /api/v1/users/google-drive/backup"

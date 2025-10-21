@@ -95,44 +95,13 @@ router.LoadHTMLGlob("templates/*")
 
 		// Define allowed origins for different environments
 		allowedOrigins := []string{
-			// Localhost development - expanded for React Native and web development
-			"http://localhost:3000",
-			"http://localhost:3001",
-			"https://chama-backend-server.vercel.app",
-			"http://localhost:8081",
-			"http://localhost:8082",
-			"http://localhost:19006",
-			"http://localhost:19007",
-			"http://127.0.0.1:3000",
-			"http://127.0.0.1:3001",
-			"https://chama-backend-server.vercel.app",
+			"https://chama-backend-server.vercel.app", // your backend domain
+			"http://localhost:8081",                   // Metro / Expo
 			"http://127.0.0.1:8081",
-			"http://127.0.0.1:8082",
+			"http://localhost:19006",                  // Expo web preview
 			"http://127.0.0.1:19006",
-			"http://127.0.0.1:19007",
-			// HTTPS versions for localhost (in case of redirects)
-			"https://localhost:3000",
-			"https://localhost:3001",
-			"https://https://chama-backend-server.vercel.app",
-			"https://localhost:8081",
-			"https://localhost:8082",
-			"https://localhost:19006",
-			"https://localhost:19007",
-			"https://127.0.0.1:3000",
-			"https://127.0.0.1:3001",
-			"https://127.0.0.1:8080",
-			"https://127.0.0.1:8081",
-			"https://127.0.0.1:8082",
-			"https://127.0.0.1:19006",
-			"https://127.0.0.1:19007",
-			"https://chama-backend-server.vercel.app",
-			"http://localhost:8081", // React Native web development
-			"http://dqtl6f-ip-41-139-130-223.tunnelmole.net",
-			// Tunnel URLs (update these with your current tunnel URLs)
-			"https://dqtl6f-ip-41-139-130-223.tunnelmole.net",
-			// Production URLs (add your production domains here)
-			// "https://vaultke.com",
-			// "https://app.vaultke.com",
+			"http://localhost:3000",
+			"http://127.0.0.1:3000",
 		}
 
 		// Check if origin is allowed

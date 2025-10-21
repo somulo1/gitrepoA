@@ -56,10 +56,6 @@ type Config struct {
 	AllowedFileTypes []string
 	UploadPath       string
 
-	// LiveKit Configuration
-	LiveKitAPIKey    string
-	LiveKitSecretKey string
-	LiveKitURL       string
 
 	// Google OAuth Configuration
 	GoogleClientID     string
@@ -110,7 +106,7 @@ func Load() *Config {
 		MpesaCallbackURL:       getEnv("MPESA_CALLBACK_URL", ""),
 		MpesaInitiatorName:     getEnv("MPESA_INITIATOR_NAME", "testapi"),
 		MpesaInitiatorPassword: getEnv("MPESA_INITIATOR_PASSWORD", "Safaricom999!*!"),
-		BaseURL:                getEnv("BASE_URL", "http://localhost:8080"),
+		BaseURL:                getEnv("BASE_URL", "https://chama-backend-server.vercel.app"),
 
 		// Firebase Configuration
 		FirebaseProjectID:    getEnv("FIREBASE_PROJECT_ID", ""),
@@ -143,10 +139,6 @@ func Load() *Config {
 		AllowedFileTypes: []string{"image/jpeg", "image/png", "image/webp"},
 		UploadPath:       getEnv("UPLOAD_PATH", "./uploads"),
 
-		// LiveKit Configuration
-		LiveKitAPIKey:    getEnv("LIVEKIT_API_KEY", ""),
-		LiveKitSecretKey: getEnv("LIVEKIT_SECRET_KEY", ""),
-		LiveKitURL:       getEnv("LIVEKIT_URL", "ws://localhost:7880"),
 
 		// Google OAuth Configuration
 		GoogleClientID:     getEnv("GOOGLE_CLIENT_ID", ""),

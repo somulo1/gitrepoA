@@ -127,30 +127,12 @@ func TestConfigLoading(t *testing.T) {
 		assert.Equal(t, "123456", cfg.MpesaShortcode)
 	})
 
-	t.Run("ConfigLiveKitSettings", func(t *testing.T) {
-		// Set LiveKit environment variables
-		os.Setenv("LIVEKIT_API_KEY", "test-api-key")
-		os.Setenv("LIVEKIT_SECRET_KEY", "test-secret-key")
-		os.Setenv("LIVEKIT_URL", "http://localhost:7880")
-
-		defer func() {
-			os.Unsetenv("LIVEKIT_API_KEY")
-			os.Unsetenv("LIVEKIT_SECRET_KEY")
-			os.Unsetenv("LIVEKIT_URL")
-		}()
-
-		cfg := config.Load()
-
-		assert.Equal(t, "test-api-key", cfg.LiveKitAPIKey)
-		assert.Equal(t, "test-secret-key", cfg.LiveKitSecretKey)
-		assert.Equal(t, "http://localhost:7880", cfg.LiveKitURL)
-	})
 
 	t.Run("ConfigGoogleSettings", func(t *testing.T) {
 		// Set Google environment variables
 		os.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
 		os.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
-		os.Setenv("GOOGLE_REDIRECT_URL", "http://localhost:8080/auth/google/callback")
+		os.Setenv("GOOGLE_REDIRECT_URL", "https://chama-backend-server.vercel.app/auth/google/callback")
 
 		defer func() {
 			os.Unsetenv("GOOGLE_CLIENT_ID")
@@ -162,7 +144,7 @@ func TestConfigLoading(t *testing.T) {
 
 		assert.Equal(t, "test-client-id", cfg.GoogleClientID)
 		assert.Equal(t, "test-client-secret", cfg.GoogleClientSecret)
-		assert.Equal(t, "http://localhost:8080/auth/google/callback", cfg.GoogleRedirectURL)
+		assert.Equal(t, "https://chama-backend-server.vercel.app/auth/google/callback", cfg.GoogleRedirectURL)
 	})
 
 	t.Run("ConfigEmailSettings", func(t *testing.T) {

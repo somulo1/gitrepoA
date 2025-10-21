@@ -853,18 +853,16 @@ func InitializeMeetingService(db *sql.DB, notifService *services.NotificationSer
 	// Set the notification service
 	notificationService = notifService
 
-	// Get LiveKit configuration
-	config := services.GetLiveKitConfig()
+	// Get LiveKit configuration (removed - LiveKit no longer used)
 
-	// Initialize LiveKit service
-	livekitService := services.NewLiveKitService(config.WSURL, config.APIKey, config.APISecret)
+	// Initialize LiveKit service (removed - LiveKit no longer used)
 
 	// Initialize calendar service (optional)
 	var calendarService *services.CalendarService
 	// TODO: Initialize calendar service with credentials when available
 
-	// Initialize meeting service
-	meetingService = services.NewMeetingService(db, livekitService, calendarService)
+	// Initialize meeting service (without LiveKit)
+	meetingService = services.NewMeetingService(db, nil, calendarService)
 
 	// Initialize and start scheduler service
 	schedulerService = services.NewSchedulerService(db, meetingService)
@@ -1344,7 +1342,7 @@ func JoinMeetingWithLiveKit(c *gin.Context) {
 		"data": gin.H{
 			"token":            token,
 			"roomName":         meeting.LiveKitRoomName,
-			"wsUrl":            services.GetLiveKitConfig().WSURL,
+			"wsUrl":            "", // LiveKit removed
 			"meetingId":        meetingID,
 			"userRole":         req.UserRole,
 			"meetingTitle":     meeting.Title,
@@ -2298,60 +2296,21 @@ func PreviewMeeting(c *gin.Context) {
 
 // TestLiveKitConnection tests the LiveKit configuration and connection
 func TestLiveKitConnection(c *gin.Context) {
-	// Get LiveKit configuration
-	config := services.GetLiveKitConfig()
-
-	// Initialize LiveKit service
-	livekitService := services.NewLiveKitService(config.WSURL, config.APIKey, config.APISecret)
-
-	// Validate configuration
-	err := livekitService.ValidateConfig()
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"success": false,
-			"error":   "LiveKit configuration invalid: " + err.Error(),
-			"config": gin.H{
-				"wsUrl":           config.WSURL,
-				"hasApiKey":       config.APIKey != "",
-				"hasApiSecret":    config.APISecret != "",
-				"apiKeyLength":    len(config.APIKey),
-				"apiSecretLength": len(config.APISecret),
-			},
-		})
-		return
-	}
-
-	// Try to generate a test token
-	testToken, err := livekitService.GenerateAccessToken("test-room", "test-user", "member")
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"success": false,
-			"error":   "Failed to generate test token: " + err.Error(),
-			"config": gin.H{
-				"wsUrl":           config.WSURL,
-				"hasApiKey":       config.APIKey != "",
-				"hasApiSecret":    config.APISecret != "",
-				"apiKeyLength":    len(config.APIKey),
-				"apiSecretLength": len(config.APISecret),
-			},
-		})
-		return
-	}
-
+	// LiveKit functionality removed
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"message": "LiveKit configuration is valid",
+		"message": "LiveKit has been removed from the system",
 		"config": gin.H{
-			"wsUrl":           config.WSURL,
-			"hasApiKey":       config.APIKey != "",
-			"hasApiSecret":    config.APISecret != "",
-			"apiKeyLength":    len(config.APIKey),
-			"apiSecretLength": len(config.APISecret),
+			"wsUrl":           "",
+			"hasApiKey":       false,
+			"hasApiSecret":    false,
+			"apiKeyLength":    0,
+			"apiSecretLength": 0,
 		},
 		"testToken": gin.H{
-			"generated":    true,
-			"tokenLength":  len(testToken),
-			"tokenPreview": testToken[:50] + "...",
+			"generated":    false,
+			"tokenLength":  0,
+			"tokenPreview": "",
 		},
 	})
 }

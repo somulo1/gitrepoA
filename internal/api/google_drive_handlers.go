@@ -927,7 +927,7 @@ func GetGoogleDriveAuthURL(c *gin.Context) {
 	}
 
 	if redirectURL == "" {
-		redirectURL = "http://localhost:8080/api/v1/auth/google/callback" // fallback
+		redirectURL = "https://chama-backend-server.vercel.app/api/v1/auth/google/callback" // fallback
 	}
 
 	// Get user ID from query parameter or context

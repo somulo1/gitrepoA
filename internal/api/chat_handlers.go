@@ -1045,7 +1045,7 @@ func handleFileMessage(c *gin.Context, userID, roomID string) {
 	}
 
 	// Create file URL with full base URL for frontend access
-	fileURL := fmt.Sprintf("http://127.0.0.1:8080/uploads/chat/%s", fileName)
+	fileURL := fmt.Sprintf("https://chama-backend-server.vercel.app/uploads/chat/%s", fileName)
 
 	// Add file URL to metadata
 	metadata["fileUrl"] = fileURL
