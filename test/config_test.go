@@ -132,7 +132,7 @@ func TestConfigLoading(t *testing.T) {
 		// Set Google environment variables
 		os.Setenv("GOOGLE_CLIENT_ID", "test-client-id")
 		os.Setenv("GOOGLE_CLIENT_SECRET", "test-client-secret")
-		os.Setenv("GOOGLE_REDIRECT_URL", "https://chama-backend-server.vercel.app/auth/google/callback")
+		os.Setenv("GOOGLE_REDIRECT_URL", "https://gitrepoa-1.onrender.com/auth/google/callback")
 
 		defer func() {
 			os.Unsetenv("GOOGLE_CLIENT_ID")
@@ -144,7 +144,7 @@ func TestConfigLoading(t *testing.T) {
 
 		assert.Equal(t, "test-client-id", cfg.GoogleClientID)
 		assert.Equal(t, "test-client-secret", cfg.GoogleClientSecret)
-		assert.Equal(t, "https://chama-backend-server.vercel.app/auth/google/callback", cfg.GoogleRedirectURL)
+		assert.Equal(t, "https://gitrepoa-1.onrender.com/auth/google/callback", cfg.GoogleRedirectURL)
 	})
 
 	t.Run("ConfigEmailSettings", func(t *testing.T) {

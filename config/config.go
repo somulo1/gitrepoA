@@ -106,7 +106,7 @@ func Load() *Config {
 		MpesaCallbackURL:       getEnv("MPESA_CALLBACK_URL", ""),
 		MpesaInitiatorName:     getEnv("MPESA_INITIATOR_NAME", "testapi"),
 		MpesaInitiatorPassword: getEnv("MPESA_INITIATOR_PASSWORD", "Safaricom999!*!"),
-		BaseURL:                getEnv("BASE_URL", "https://chama-backend-server.vercel.app"),
+		BaseURL:                getEnv("BASE_URL", "https://gitrepoa-1.onrender.com"),
 
 		// Firebase Configuration
 		FirebaseProjectID:    getEnv("FIREBASE_PROJECT_ID", ""),

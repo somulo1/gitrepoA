@@ -95,7 +95,7 @@ router.LoadHTMLGlob("templates/*")
 
 		// Define allowed origins for different environments
 		allowedOrigins := []string{
-			"https://chama-backend-server.vercel.app", // your backend domain
+			"https://gitrepoa-1.onrender.com", // your backend domain
 			"http://localhost:8081",                   // Metro / Expo
 			"http://127.0.0.1:8081",
 			"http://localhost:19006",                  // Expo web preview
