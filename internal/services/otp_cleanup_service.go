@@ -23,15 +23,30 @@ func NewOTPCleanupService(db *sql.DB) *OTPCleanupService {
 func (s *OTPCleanupService) StartCleanupScheduler() {
 	// Run cleanup every 30 seconds
 	ticker := time.NewTicker(30 * time.Second)
+	defer ticker.Stop()
+
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("OTP cleanup scheduler panic recovered: %v", r)
+			}
+		}()
+
 		for {
 			select {
 			case <-ticker.C:
-				s.CleanupExpiredTokens()
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("OTP cleanup panic recovered: %v", r)
+						}
+					}()
+					s.CleanupExpiredTokens()
+				}()
 			}
 		}
 	}()
-	
+
 	log.Println("🧹 OTP cleanup scheduler started - running every 30 seconds")
 }
 

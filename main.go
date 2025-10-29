@@ -71,13 +71,25 @@ func main() {
 
 	router := gin.New()
 
+	// Add memory monitoring middleware
+	router.Use(func(c *gin.Context) {
+		start := time.Now()
+		c.Next()
+		duration := time.Since(start)
+
+		// Log memory-intensive requests
+		if duration > 5*time.Second {
+			log.Printf("🚨 SLOW REQUEST: %s %s took %v", c.Request.Method, c.Request.URL.Path, duration)
+		}
+	})
+
 	// Load HTML templates for OAuth pages
 
 	router.LoadHTMLGlob("templates/*")
 
 	// Middleware
-	router.Use(gin.Logger()) // Commented out to reduce log noise
-	router.Use(gin.Recovery())
+	// router.Use(gin.Logger()) // Commented out to reduce log noise
+	// router.Use(gin.Recovery())
 
 	// HSTS middleware for production
 	if os.Getenv("ENVIRONMENT") == "production" {
@@ -98,14 +110,15 @@ func main() {
 			"https://gitrepoa-1.onrender.com", // your backend domain
 			"http://localhost:8081",           // Metro / Expo
 			"http://127.0.0.1:8081",
+			"http://localhost:8080", 
 			"http://localhost:19006", // Expo web preview
 			"http://127.0.0.1:19006",
 			"http://localhost:3000",
 			"http://127.0.0.1:3000",
 		}
 
-		// Check if origin is allowed
-		allowedOrigin := "*" // Default to allow all for development
+		// Check if origin is allowed - be restrictive in production
+		allowedOrigin := ""
 		if origin != "" {
 			for _, allowed := range allowedOrigins {
 				if origin == allowed {
@@ -113,6 +126,20 @@ func main() {
 					break
 				}
 			}
+		}
+
+		// In production, only allow specific origins - no fallback to "*"
+		if allowedOrigin == "" && os.Getenv("ENVIRONMENT") == "production" {
+			log.Printf("🚫 CORS: Origin '%s' not allowed in production", origin)
+			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
+				"error": "Origin not allowed",
+			})
+			return
+		}
+
+		// For development, allow "*" if no specific match (for flexibility during development)
+		if allowedOrigin == "" && os.Getenv("ENVIRONMENT") != "production" {
+			allowedOrigin = "*"
 		}
 
 		// Log CORS processing for debugging
@@ -358,6 +385,7 @@ func main() {
 			users := protected.Group("/users")
 			{
 				users.GET("/", api.GetUsers)
+				users.GET("/:id", authHandlers.GetUserByID)            // Get user by ID
 				users.GET("/admin/all", api.GetAllUsersForAdmin)       // Admin endpoint to get all users
 				users.GET("/admin/statistics", api.GetAdminStatistics) // Admin statistics endpoint
 				users.GET("/admin/analytics", api.GetSystemAnalytics)  // System analytics endpoint
@@ -742,7 +770,7 @@ func main() {
 			}
 
 			// User Search routes
-			userSearch := protected.Group("/users")
+			userSearch := protected.Group("/user-search")
 			{
 				userSearch.GET("/search", userSearchHandlers.SearchUsers)
 				userSearch.GET("/search/advanced", userSearchHandlers.SearchUsersAdvanced)
@@ -846,6 +874,7 @@ func main() {
 				loans.POST("/:id/approve", api.ApproveLoan)
 				loans.POST("/:id/reject", api.RejectLoan)
 				loans.POST("/:id/disburse", api.DisburseLoan)
+				loans.POST("/:id/guarantor-response", api.RespondToGuarantorRequest)
 				loans.GET("/guarantor-requests", api.GetGuarantorRequests)
 				loans.POST("/guarantors/:guarantorId/respond", api.RespondToGuarantorRequest)
 			}

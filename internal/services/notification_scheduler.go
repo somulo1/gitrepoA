@@ -31,12 +31,26 @@ func (ns *NotificationScheduler) Start() {
 
 	// Check for pending notifications every minute
 	ns.ticker = time.NewTicker(1 * time.Minute)
+	defer ns.ticker.Stop()
 
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Notification scheduler panic recovered: %v", r)
+			}
+		}()
+
 		for {
 			select {
 			case <-ns.ticker.C:
-				ns.processPendingNotifications()
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("Notification processing panic recovered: %v", r)
+						}
+					}()
+					ns.processPendingNotifications()
+				}()
 			case <-ns.stopChan:
 				log.Println("Stopping notification scheduler...")
 				return

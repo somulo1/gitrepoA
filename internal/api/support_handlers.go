@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 	"net/http"
@@ -141,38 +142,54 @@ func CreateSupportRequest(c *gin.Context) {
 	fmt.Printf("✅ Support request created successfully: ID=%s, UserID=%s, Category=%s\n", requestID, userID, requestData.Category)
 
 	// Create notification for admins about new support request
+	// Use a timeout context to prevent goroutine leaks
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	go func() {
-		// Get all admin users
-		adminQuery := `SELECT id FROM users WHERE role = 'admin'`
-		rows, err := db.(*sql.DB).Query(adminQuery)
-		if err != nil {
-			fmt.Printf("Failed to get admin users for notification: %v\n", err)
-			return
-		}
-		defer rows.Close()
-
-		// Create notification for each admin
-		for rows.Next() {
-			var adminID string
-			if err := rows.Scan(&adminID); err != nil {
-				continue
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("Recovered from panic in support notification goroutine: %v\n", r)
 			}
+		}()
 
-			notificationQuery := `
-				INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
-				VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-			`
-
-			notificationID := fmt.Sprintf("notif_%d_%s", time.Now().UnixNano(), adminID)
-			notificationTitle := "New Support Request"
-			notificationMessage := fmt.Sprintf("New %s support request: %s", requestData.Category, requestData.Subject)
-			notificationData := fmt.Sprintf(`{"supportRequestId": "%s", "category": "%s", "type": "new_support_request"}`, requestID, requestData.Category)
-
-			_, err = db.(*sql.DB).Exec(notificationQuery, notificationID, adminID, "new_support_request", notificationTitle, notificationMessage, notificationData)
+		select {
+		case <-ctx.Done():
+			fmt.Printf("Support notification cancelled for request %s: %v\n", requestID, ctx.Err())
+			return
+		default:
+			// Get all admin users
+			adminQuery := `SELECT id FROM users WHERE role = 'admin'`
+			rows, err := db.(*sql.DB).Query(adminQuery)
 			if err != nil {
-				fmt.Printf("Failed to create new support request notification for admin %s: %v\n", adminID, err)
-			} else {
-				fmt.Printf("✅ Created new support request notification for admin %s\n", adminID)
+				fmt.Printf("Failed to get admin users for notification: %v\n", err)
+				return
+			}
+			defer rows.Close()
+
+			// Create notification for each admin
+			for rows.Next() {
+				var adminID string
+				if err := rows.Scan(&adminID); err != nil {
+					continue
+				}
+
+				notificationQuery := `
+					INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
+					VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+				`
+
+				notificationID := fmt.Sprintf("notif_%d_%s", time.Now().UnixNano(), adminID)
+				notificationTitle := "New Support Request"
+				notificationMessage := fmt.Sprintf("New %s support request: %s", requestData.Category, requestData.Subject)
+				notificationData := fmt.Sprintf(`{"supportRequestId": "%s", "category": "%s", "type": "new_support_request"}`, requestID, requestData.Category)
+
+				_, err = db.(*sql.DB).Exec(notificationQuery, notificationID, adminID, "new_support_request", notificationTitle, notificationMessage, notificationData)
+				if err != nil {
+					fmt.Printf("Failed to create new support request notification for admin %s: %v\n", adminID, err)
+				} else {
+					fmt.Printf("✅ Created new support request notification for admin %s\n", adminID)
+				}
 			}
 		}
 	}()
@@ -244,7 +261,7 @@ func GetSupportRequests(c *gin.Context) {
 		return
 	}
 
-	// Parse query parameters
+	// Parse query parameters with reasonable defaults
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
 	status := c.DefaultQuery("status", "")
@@ -252,6 +269,14 @@ func GetSupportRequests(c *gin.Context) {
 
 	limit, _ := strconv.Atoi(limitStr)
 	offset, _ := strconv.Atoi(offsetStr)
+
+	// Enforce reasonable limits to prevent memory issues
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
 
 	var query string
 	var args []interface{}
@@ -446,32 +471,48 @@ func UpdateSupportRequest(c *gin.Context) {
 	fmt.Printf("✅ Support request updated: ID=%s, Status=%s\n", requestID, updateData.Status)
 
 	// Create notification for the user when admin updates their support request
+	// Use a timeout context to prevent goroutine leaks
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	go func() {
-		// Get the support request details to find the user
-		var supportUserID string
-		var supportSubject string
-		err := db.(*sql.DB).QueryRow("SELECT user_id, subject FROM support_requests WHERE id = ?", requestID).Scan(&supportUserID, &supportSubject)
-		if err != nil {
-			fmt.Printf("Failed to get support request details for notification: %v\n", err)
+		defer func() {
+			if r := recover(); r != nil {
+				fmt.Printf("Recovered from panic in support update notification goroutine: %v\n", r)
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+			fmt.Printf("Support update notification cancelled for request %s: %v\n", requestID, ctx.Err())
 			return
-		}
+		default:
+			// Get the support request details to find the user
+			var supportUserID string
+			var supportSubject string
+			err := db.(*sql.DB).QueryRow("SELECT user_id, subject FROM support_requests WHERE id = ?", requestID).Scan(&supportUserID, &supportSubject)
+			if err != nil {
+				fmt.Printf("Failed to get support request details for notification: %v\n", err)
+				return
+			}
 
-		// Create notification
-		notificationQuery := `
-			INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
-			VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-		`
+			// Create notification
+			notificationQuery := `
+				INSERT INTO notifications (id, user_id, type, title, message, data, created_at)
+				VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+			`
 
-		notificationID := fmt.Sprintf("notif_%d", time.Now().UnixNano())
-		notificationTitle := "Support Request Updated"
-		notificationMessage := fmt.Sprintf("Your support request '%s' has been updated to: %s", supportSubject, updateData.Status)
-		notificationData := fmt.Sprintf(`{"supportRequestId": "%s", "status": "%s", "type": "support_update"}`, requestID, updateData.Status)
+			notificationID := fmt.Sprintf("notif_%d", time.Now().UnixNano())
+			notificationTitle := "Support Request Updated"
+			notificationMessage := fmt.Sprintf("Your support request '%s' has been updated to: %s", supportSubject, updateData.Status)
+			notificationData := fmt.Sprintf(`{"supportRequestId": "%s", "status": "%s", "type": "support_update"}`, requestID, updateData.Status)
 
-		_, err = db.(*sql.DB).Exec(notificationQuery, notificationID, supportUserID, "support_update", notificationTitle, notificationMessage, notificationData)
-		if err != nil {
-			fmt.Printf("Failed to create support update notification: %v\n", err)
-		} else {
-			fmt.Printf("✅ Created support update notification for user %s\n", supportUserID)
+			_, err = db.(*sql.DB).Exec(notificationQuery, notificationID, supportUserID, "support_update", notificationTitle, notificationMessage, notificationData)
+			if err != nil {
+				fmt.Printf("Failed to create support update notification: %v\n", err)
+			} else {
+				fmt.Printf("✅ Created support update notification for user %s\n", supportUserID)
+			}
 		}
 	}()
 

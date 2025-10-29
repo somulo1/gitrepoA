@@ -50,6 +50,23 @@ func Initialize(databaseURL string) (*sql.DB, error) {
 	}
 
 	log.Println("Database connection established successfully")
+
+	// Add connection pool monitoring
+	go func() {
+		ticker := time.NewTicker(10 * time.Minute)
+		defer ticker.Stop()
+		for range ticker.C {
+			stats := db.Stats()
+			log.Printf("🗄️  Database Pool Stats: Open=%d, InUse=%d, Idle=%d, WaitCount=%d, WaitDuration=%v",
+				stats.OpenConnections, stats.InUse, stats.Idle, stats.WaitCount, stats.WaitDuration)
+
+			// Alert if connection pool is stressed
+			if stats.WaitCount > 100 {
+				log.Printf("🚨 WARNING: High database wait count (%d) - connection pool may be overloaded", stats.WaitCount)
+			}
+		}
+	}()
+
 	return db, nil
 }
 

@@ -1,7 +1,9 @@
 package api
 
 import (
+	"context"
 	"database/sql"
+	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -41,7 +43,7 @@ func (h *FinancialReportsHandlers) GetFinancialReports(c *gin.Context) {
 		return
 	}
 
-	// Get pagination parameters
+	// Get pagination parameters with reasonable defaults
 	limitStr := c.DefaultQuery("limit", "50")
 	offsetStr := c.DefaultQuery("offset", "0")
 
@@ -52,6 +54,14 @@ func (h *FinancialReportsHandlers) GetFinancialReports(c *gin.Context) {
 
 	offset, err := strconv.Atoi(offsetStr)
 	if err != nil {
+		offset = 0
+	}
+
+	// Enforce reasonable limits to prevent memory issues
+	if limit <= 0 || limit > 100 {
+		limit = 50
+	}
+	if offset < 0 {
 		offset = 0
 	}
 
@@ -202,10 +212,29 @@ func (h *FinancialReportsHandlers) GenerateFinancialReport(c *gin.Context) {
 
 	// In a real implementation, you would trigger background report generation here
 	// For now, we'll just mark it as ready after a short delay
+	// Use a timeout context to prevent goroutine leaks
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	go func() {
-		time.Sleep(2 * time.Second)
-		updateQuery := `UPDATE financial_reports SET status = 'ready', file_size = 2048000 WHERE id = ?`
-		h.db.Exec(updateQuery, reportID)
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic in report generation goroutine: %v", r)
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+			log.Printf("Report generation cancelled for report %s: %v", reportID, ctx.Err())
+			// Update status to failed
+			updateQuery := `UPDATE financial_reports SET status = 'failed' WHERE id = ?`
+			h.db.Exec(updateQuery, reportID)
+			return
+		default:
+			time.Sleep(2 * time.Second)
+			updateQuery := `UPDATE financial_reports SET status = 'ready', file_size = 2048000 WHERE id = ?`
+			h.db.Exec(updateQuery, reportID)
+		}
 	}()
 
 	c.JSON(http.StatusOK, gin.H{

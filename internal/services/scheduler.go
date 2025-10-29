@@ -26,14 +26,28 @@ func NewSchedulerService(db *sql.DB, meetingService *MeetingService) *SchedulerS
 // Start begins the scheduler with a specified interval
 func (s *SchedulerService) Start(interval time.Duration) {
 	s.ticker = time.NewTicker(interval)
-	
+	defer s.ticker.Stop()
+
 	log.Printf("Scheduler started with interval: %v", interval)
-	
+
 	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Scheduler panic recovered: %v", r)
+			}
+		}()
+
 		for {
 			select {
 			case <-s.ticker.C:
-				s.runScheduledTasks()
+				func() {
+					defer func() {
+						if r := recover(); r != nil {
+							log.Printf("Scheduled task panic recovered: %v", r)
+						}
+					}()
+					s.runScheduledTasks()
+				}()
 			case <-s.stopChan:
 				log.Println("Scheduler stopped")
 				return

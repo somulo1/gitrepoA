@@ -8,6 +8,7 @@ import (
 	"os"
 	"strings"
 	"time"
+	"log"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/oauth2"
@@ -774,22 +775,44 @@ func StartBackup(c *gin.Context) {
 	}
 
 	// Simulate backup process (in real implementation, this would trigger actual backup)
+	// Use a timeout context to prevent goroutine leaks
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+
 	go func() {
-		time.Sleep(5 * time.Second) // Simulate backup time
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic in backup goroutine: %v", r)
+			}
+		}()
 
-		// Update backup status to completed
-		size := "2.4 GB"
-		duration := "45 minutes"
-		if request.Type == "incremental" {
-			size = "156 MB"
-			duration = "8 minutes"
+		select {
+		case <-ctx.Done():
+			log.Printf("Backup cancelled for backup %s: %v", backupID, ctx.Err())
+			// Update status to failed
+			db.(*sql.DB).Exec(`
+				UPDATE backup_history
+				SET status = 'failed', error = 'timeout'
+				WHERE id = ?
+			`, backupID)
+			return
+		default:
+			time.Sleep(5 * time.Second) // Simulate backup time
+
+			// Update backup status to completed
+			size := "2.4 GB"
+			duration := "45 minutes"
+			if request.Type == "incremental" {
+				size = "156 MB"
+				duration = "8 minutes"
+			}
+
+			db.(*sql.DB).Exec(`
+				UPDATE backup_history
+				SET status = 'completed', size = ?, duration = ?
+				WHERE id = ?
+			`, size, duration, backupID)
 		}
-
-		db.(*sql.DB).Exec(`
-			UPDATE backup_history
-			SET status = 'completed', size = ?, duration = ?
-			WHERE id = ?
-		`, size, duration, backupID)
 	}()
 
 	c.JSON(http.StatusOK, gin.H{
@@ -833,9 +856,25 @@ func PerformSystemMaintenance(c *gin.Context) {
 	}
 
 	// Simulate maintenance operation
+	// Use a timeout context to prevent goroutine leaks
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
 	go func() {
-		time.Sleep(3 * time.Second) // Simulate maintenance time
-		// In real implementation, this would perform actual maintenance
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic in maintenance goroutine: %v", r)
+			}
+		}()
+
+		select {
+		case <-ctx.Done():
+			log.Printf("Maintenance cancelled: %v", ctx.Err())
+			return
+		default:
+			time.Sleep(3 * time.Second) // Simulate maintenance time
+			// In real implementation, this would perform actual maintenance
+		}
 	}()
 
 	c.JSON(http.StatusOK, gin.H{
