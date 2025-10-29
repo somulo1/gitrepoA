@@ -291,7 +291,7 @@ func GetGoogleDriveStatus(c *gin.Context) {
 
 	// Add debug information to help troubleshoot
 	debugInfo := gin.H{
-		"user_id":   userID,
+		"user_id": userID,
 		"connected": connected,
 		"timestamp": time.Now().Format(time.RFC3339),
 	}
@@ -389,17 +389,19 @@ func DebugGoogleDriveTokens(c *gin.Context) {
 	})
 }
 
+
+
 // BackupMaintenance represents backup maintenance data
 type BackupMaintenance struct {
-	ID        string    `json:"id"`
-	Type      string    `json:"type"`   // full, incremental
-	Status    string    `json:"status"` // completed, failed, running
-	Size      string    `json:"size"`
-	Duration  string    `json:"duration"`
-	Timestamp time.Time `json:"timestamp"`
-	Location  string    `json:"location"`
-	Error     string    `json:"error,omitempty"`
-	UserID    string    `json:"user_id"`
+	ID          string    `json:"id"`
+	Type        string    `json:"type"`        // full, incremental
+	Status      string    `json:"status"`      // completed, failed, running
+	Size        string    `json:"size"`
+	Duration    string    `json:"duration"`
+	Timestamp   time.Time `json:"timestamp"`
+	Location    string    `json:"location"`
+	Error       string    `json:"error,omitempty"`
+	UserID      string    `json:"user_id"`
 }
 
 // SystemStatus represents system monitoring data
@@ -414,12 +416,12 @@ type SystemStatus struct {
 
 // BackupSettings represents backup configuration
 type BackupSettings struct {
-	AutoBackup     bool   `json:"auto_backup"`
-	DailyBackup    bool   `json:"daily_backup"`
-	WeeklyBackup   bool   `json:"weekly_backup"`
-	CloudBackup    bool   `json:"cloud_backup"`
-	EncryptBackups bool   `json:"encrypt_backups"`
-	RetentionDays  int    `json:"retention_days"`
+	AutoBackup     bool `json:"auto_backup"`
+	DailyBackup    bool `json:"daily_backup"`
+	WeeklyBackup   bool `json:"weekly_backup"`
+	CloudBackup    bool `json:"cloud_backup"`
+	EncryptBackups bool `json:"encrypt_backups"`
+	RetentionDays  int  `json:"retention_days"`
 	UserID         string `json:"user_id"`
 }
 
@@ -551,7 +553,7 @@ func GetSystemStatus(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":       true,
+		"success": true,
 		"system_status": systemStatus,
 	})
 }
@@ -623,7 +625,7 @@ func GetBackupSettings(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":  true,
+		"success": true,
 		"settings": settings,
 	})
 }
@@ -695,7 +697,7 @@ func UpdateBackupSettings(c *gin.Context) {
 		(user_id, auto_backup, daily_backup, weekly_backup, cloud_backup, encrypt_backups, retention_days, updated_at)
 		VALUES (?, ?, ?, ?, ?, ?, ?, ?)
 	`, userID, settings.AutoBackup, settings.DailyBackup, settings.WeeklyBackup,
-		settings.CloudBackup, settings.EncryptBackups, settings.RetentionDays, time.Now())
+	   settings.CloudBackup, settings.EncryptBackups, settings.RetentionDays, time.Now())
 
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -791,8 +793,8 @@ func StartBackup(c *gin.Context) {
 	}()
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"message":   fmt.Sprintf("%s backup started successfully", strings.Title(request.Type)),
+		"success": true,
+		"message": fmt.Sprintf("%s backup started successfully", strings.Title(request.Type)),
 		"backup_id": backupID,
 	})
 }
@@ -956,10 +958,10 @@ func GetGoogleDriveAuthURL(c *gin.Context) {
 	)
 
 	c.JSON(http.StatusOK, gin.H{
-		"success":   true,
-		"auth_url":  authURL,
+		"success":  true,
+		"auth_url": authURL,
 		"client_id": clientID,
-		"message":   "Use this URL to connect Google Drive",
+		"message":  "Use this URL to connect Google Drive",
 	})
 }
 

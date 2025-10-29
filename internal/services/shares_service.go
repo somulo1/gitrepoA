@@ -734,7 +734,7 @@ func (s *SharesService) BuyDividends(chamaID, userID string, req *models.BuyDivi
 		ID:                uuid.New().String(),
 		ChamaID:           chamaID,
 		MemberID:          userID,
-		Name:              "Dividend Certificate",       // Set name for dividend certificates
+		Name:              "Dividend Certificate", // Set name for dividend certificates
 		ShareType:         models.ShareType("dividend"), // Special type for dividend certificates
 		SharesOwned:       req.Quantity,
 		ShareValue:        declaration.DividendPerShare,
@@ -876,10 +876,10 @@ func (s *SharesService) recordSharePurchaseTransaction(tx *sql.Tx, chamaID, user
 	now := time.Now()
 
 	metadata := map[string]interface{}{
-		"shareId":         shareID,
-		"quantity":        quantity,
-		"pricePerShare":   pricePerShare,
-		"paymentMethod":   paymentMethod,
+		"shareId":        shareID,
+		"quantity":       quantity,
+		"pricePerShare":  pricePerShare,
+		"paymentMethod":  paymentMethod,
 		"transactionType": "share_purchase",
 	}
 	if notes != nil {
@@ -927,10 +927,10 @@ func (s *SharesService) recordDividendPurchaseTransaction(tx *sql.Tx, chamaID, u
 	now := time.Now()
 
 	metadata := map[string]interface{}{
-		"shareId":         shareID,
-		"quantity":        quantity,
-		"pricePerShare":   pricePerShare,
-		"paymentMethod":   paymentMethod,
+		"shareId":        shareID,
+		"quantity":       quantity,
+		"pricePerShare":  pricePerShare,
+		"paymentMethod":  paymentMethod,
 		"transactionType": "dividend_certificate_purchase",
 	}
 	if notes != nil {

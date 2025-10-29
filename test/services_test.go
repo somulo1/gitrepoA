@@ -1487,9 +1487,9 @@ func TestMilitaryGradeE2EEService(t *testing.T) {
 	t.Run("MessageMetadataEncryptionFlags", func(t *testing.T) {
 		// Test that encrypted messages get proper metadata flags
 		metadata := map[string]interface{}{
-			"encrypted":       true,
+			"encrypted": true,
 			"needsDecryption": true,
-			"securityLevel":   "FALLBACK",
+			"securityLevel": "FALLBACK",
 		}
 
 		assert.True(t, metadata["encrypted"].(bool))

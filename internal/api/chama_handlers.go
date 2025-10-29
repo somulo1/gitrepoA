@@ -375,6 +375,8 @@ func CreateChama(c *gin.Context) {
 		}
 	}
 
+
+
 	if req.MaxMembers < 2 || req.MaxMembers > 1000 {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"success": false,
@@ -541,29 +543,29 @@ func CreateChama(c *gin.Context) {
 		"success": true,
 		"message": "Chama created successfully",
 		"data": map[string]interface{}{
-			"id":                      chama.ID,
-			"name":                    chama.Name,
-			"description":             chama.Description,
-			"category":                chama.Category,
-			"type":                    chama.Type,
-			"status":                  chama.Status,
-			"county":                  chama.County,
-			"town":                    chama.Town,
-			"contribution_amount":     chama.ContributionAmount,
-			"contribution_frequency":  chama.ContributionFrequency,
-			"target_amount":           chama.TargetAmount,
-			"target_deadline":         chama.TargetDeadline,
-			"payment_method":          chama.PaymentMethod,
-			"till_number":             chama.TillNumber,
-			"paybill_business_number": chama.PaybillBusinessNumber,
-			"paybill_account_number":  chama.PaybillAccountNumber,
-			"payment_recipient_name":  chama.PaymentRecipientName,
-			"max_members":             chama.MaxMembers,
-			"current_members":         chama.CurrentMembers,
-			"is_public":               chama.IsPublic,
-			"requires_approval":       chama.RequiresApproval,
-			"created_by":              chama.CreatedBy,
-			"created_at":              chama.CreatedAt,
+			"id":                     chama.ID,
+			"name":                   chama.Name,
+			"description":            chama.Description,
+			"category":               chama.Category,
+			"type":                   chama.Type,
+			"status":                 chama.Status,
+			"county":                 chama.County,
+			"town":                   chama.Town,
+			"contribution_amount":    chama.ContributionAmount,
+			"contribution_frequency":    chama.ContributionFrequency,
+			"target_amount":             chama.TargetAmount,
+			"target_deadline":           chama.TargetDeadline,
+			"payment_method":            chama.PaymentMethod,
+			"till_number":               chama.TillNumber,
+			"paybill_business_number":   chama.PaybillBusinessNumber,
+			"paybill_account_number":    chama.PaybillAccountNumber,
+			"payment_recipient_name":    chama.PaymentRecipientName,
+			"max_members":               chama.MaxMembers,
+			"current_members":        chama.CurrentMembers,
+			"is_public":              chama.IsPublic,
+			"requires_approval":      chama.RequiresApproval,
+			"created_by":             chama.CreatedBy,
+			"created_at":             chama.CreatedAt,
 		},
 	})
 }
@@ -2041,10 +2043,10 @@ func GetEligibleLoanMembers(c *gin.Context) {
 		}
 
 		member := map[string]interface{}{
-			"id":              userID,
-			"name":            firstName + " " + lastName,
-			"approvedAmount":  approvedAmount,
-			"status":          status,
+			"id":             userID,
+			"name":           firstName + " " + lastName,
+			"approvedAmount": approvedAmount,
+			"status":         status,
 			"applicationDate": createdAt,
 		}
 		members = append(members, member)
@@ -2115,8 +2117,8 @@ func GetEligibleWelfareMembers(c *gin.Context) {
 		}
 
 		member := map[string]interface{}{
-			"id":                 userID,
-			"name":               firstName + " " + lastName,
+			"id":                  userID,
+			"name":                firstName + " " + lastName,
 			"contributionAmount": contributionAmount,
 			"contributionCount":  contributionCount,
 		}
@@ -2189,10 +2191,10 @@ func GetEligibleDividendMembers(c *gin.Context) {
 		}
 
 		member := map[string]interface{}{
-			"id":          userID,
-			"name":        firstName + " " + lastName,
-			"sharesOwned": sharesOwned,
-			"totalValue":  totalValue,
+			"id":           userID,
+			"name":         firstName + " " + lastName,
+			"sharesOwned":  sharesOwned,
+			"totalValue":   totalValue,
 		}
 		members = append(members, member)
 	}
@@ -2271,10 +2273,10 @@ func GetEligibleSharesMembers(c *gin.Context) {
 		}
 
 		member := map[string]interface{}{
-			"id":                 userID,
-			"name":               firstName + " " + lastName,
-			"currentShares":      currentShares,
-			"eligibleShares":     eligibleShares,
+			"id":                userID,
+			"name":              firstName + " " + lastName,
+			"currentShares":     currentShares,
+			"eligibleShares":    eligibleShares,
 			"totalContributions": totalContributions,
 		}
 		members = append(members, member)
@@ -2418,12 +2420,12 @@ func GetEligibleOtherMembers(c *gin.Context) {
 		eligibleAmount := totalContributions * 0.1
 
 		member := map[string]interface{}{
-			"id":                 userID,
-			"name":               firstName + " " + lastName,
-			"eligibleAmount":     eligibleAmount,
-			"totalContributions": totalContributions,
-			"contributionCount":  contributionCount,
-			"joinedAt":           joinedAt,
+			"id":                  userID,
+			"name":                firstName + " " + lastName,
+			"eligibleAmount":      eligibleAmount,
+			"totalContributions":  totalContributions,
+			"contributionCount":   contributionCount,
+			"joinedAt":            joinedAt,
 		}
 		members = append(members, member)
 	}
@@ -2447,21 +2449,21 @@ func CreateIndividualDisbursement(c *gin.Context) {
 
 	// Parse request body
 	var req struct {
-		Type          string  `json:"type" binding:"required"`
-		Category      string  `json:"category" binding:"required"`
-		MemberID      string  `json:"memberId" binding:"required"`
-		MemberName    string  `json:"memberName" binding:"required"`
-		Amount        float64 `json:"amount" binding:"required"`
-		Purpose       string  `json:"purpose" binding:"required"`
-		PrivateNote   string  `json:"privateNote"`
-		FromAccount   string  `json:"fromAccount" binding:"required"`
-		ToAccount     string  `json:"toAccount" binding:"required"`
-		InitiatedBy   string  `json:"initiatedBy" binding:"required"`
-		InitiatedByID string  `json:"initiatedById" binding:"required"`
-		Timestamp     string  `json:"timestamp" binding:"required"`
-		Status        string  `json:"status" binding:"required"`
-		TransactionID string  `json:"transactionId" binding:"required"`
-		SecurityHash  string  `json:"securityHash" binding:"required"`
+		Type            string  `json:"type" binding:"required"`
+		Category        string  `json:"category" binding:"required"`
+		MemberID        string  `json:"memberId" binding:"required"`
+		MemberName      string  `json:"memberName" binding:"required"`
+		Amount          float64 `json:"amount" binding:"required"`
+		Purpose         string  `json:"purpose" binding:"required"`
+		PrivateNote     string  `json:"privateNote"`
+		FromAccount     string  `json:"fromAccount" binding:"required"`
+		ToAccount       string  `json:"toAccount" binding:"required"`
+		InitiatedBy     string  `json:"initiatedBy" binding:"required"`
+		InitiatedByID   string  `json:"initiatedById" binding:"required"`
+		Timestamp       string  `json:"timestamp" binding:"required"`
+		Status          string  `json:"status" binding:"required"`
+		TransactionID   string  `json:"transactionId" binding:"required"`
+		SecurityHash    string  `json:"securityHash" binding:"required"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -2669,20 +2671,20 @@ func CreateChamaShares(c *gin.Context) {
 
 	// Parse request body
 	var req struct {
-		ShareType           string  `json:"shareType" binding:"required"`
-		TotalShares         int     `json:"totalShares" binding:"required"`
-		PricePerShare       float64 `json:"pricePerShare" binding:"required"`
-		MinimumPurchase     int     `json:"minimumPurchase"`
-		Description         string  `json:"description"`
-		EligibilityCriteria string  `json:"eligibilityCriteria"`
-		ApprovalRequired    bool    `json:"approvalRequired"`
-		TotalValue          float64 `json:"totalValue"`
-		CreatedBy           string  `json:"createdBy"`
-		CreatedByID         string  `json:"createdById"`
-		Timestamp           string  `json:"timestamp"`
-		Status              string  `json:"status"`
-		TransactionID       string  `json:"transactionId"`
-		SecurityHash        string  `json:"securityHash"`
+		ShareType         string  `json:"shareType" binding:"required"`
+		TotalShares       int     `json:"totalShares" binding:"required"`
+		PricePerShare     float64 `json:"pricePerShare" binding:"required"`
+		MinimumPurchase   int     `json:"minimumPurchase"`
+		Description       string  `json:"description"`
+		EligibilityCriteria string `json:"eligibilityCriteria"`
+		ApprovalRequired  bool    `json:"approvalRequired"`
+		TotalValue        float64 `json:"totalValue"`
+		CreatedBy         string  `json:"createdBy"`
+		CreatedByID       string  `json:"createdById"`
+		Timestamp         string  `json:"timestamp"`
+		Status            string  `json:"status"`
+		TransactionID     string  `json:"transactionId"`
+		SecurityHash      string  `json:"securityHash"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -2754,19 +2756,19 @@ func DeclareChamaDividends(c *gin.Context) {
 
 	// Parse request body
 	var req struct {
-		DividendType        string  `json:"dividendType" binding:"required"`
-		TotalAmount         float64 `json:"totalAmount" binding:"required"`
-		DividendPerShare    float64 `json:"dividendPerShare"`
-		PaymentDate         string  `json:"paymentDate" binding:"required"`
-		Description         string  `json:"description"`
-		EligibilityCriteria string  `json:"eligibilityCriteria"`
-		ApprovalRequired    bool    `json:"approvalRequired"`
-		CreatedBy           string  `json:"createdBy"`
-		CreatedByID         string  `json:"createdById"`
-		Timestamp           string  `json:"timestamp"`
-		Status              string  `json:"status"`
-		TransactionID       string  `json:"transactionId"`
-		SecurityHash        string  `json:"securityHash"`
+		DividendType       string  `json:"dividendType" binding:"required"`
+		TotalAmount        float64 `json:"totalAmount" binding:"required"`
+		DividendPerShare   float64 `json:"dividendPerShare"`
+		PaymentDate        string  `json:"paymentDate" binding:"required"`
+		Description        string  `json:"description"`
+		EligibilityCriteria string `json:"eligibilityCriteria"`
+		ApprovalRequired   bool    `json:"approvalRequired"`
+		CreatedBy          string  `json:"createdBy"`
+		CreatedByID        string  `json:"createdById"`
+		Timestamp          string  `json:"timestamp"`
+		Status             string  `json:"status"`
+		TransactionID      string  `json:"transactionId"`
+		SecurityHash       string  `json:"securityHash"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

@@ -59,9 +59,9 @@ func TestFallbackEncryptionPattern(t *testing.T) {
 
 func TestMessageMetadataFlags(t *testing.T) {
 	metadata := map[string]interface{}{
-		"encrypted":       true,
+		"encrypted":      true,
 		"needsDecryption": true,
-		"securityLevel":   "FALLBACK",
+		"securityLevel":  "FALLBACK",
 	}
 
 	assert.True(t, metadata["encrypted"].(bool))

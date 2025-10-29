@@ -15,14 +15,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
+	"github.com/golang-jwt/jwt/v5"
 )
 
 // MeetingService handles meeting-related operations
 type MeetingService struct {
 	db              *sql.DB
-	livekitService  *LiveKitService
 	calendarService *CalendarService
 	roomGenerator   *RoomNameGenerator
 }
@@ -94,16 +93,15 @@ func (g *RoomNameGenerator) sanitizeRoomName(roomName string) string {
 }
 
 // NewMeetingService creates a new meeting service instance
-func NewMeetingService(db *sql.DB, livekitService *LiveKitService, calendarService *CalendarService) *MeetingService {
+func NewMeetingService(db *sql.DB, calendarService *CalendarService) *MeetingService {
 	return &MeetingService{
 		db:              db,
-		livekitService:  livekitService,
 		calendarService: calendarService,
 		roomGenerator:   NewRoomNameGenerator(),
 	}
 }
 
-// Meeting represents a meeting with LiveKit integration
+// Meeting represents a meeting
 type Meeting struct {
 	ID               string     `json:"id"`
 	ChamaID          string     `json:"chamaId"`
@@ -114,8 +112,7 @@ type Meeting struct {
 	Location         string     `json:"location"`
 	MeetingURL       string     `json:"meetingUrl"`
 	MeetingType      string     `json:"meetingType"`
-	LiveKitRoomName  string     `json:"livekitRoomName"`
-	LiveKitRoomID    string     `json:"livekitRoomId"`
+	RoomName         string     `json:"roomName"`
 	Status           string     `json:"status"`
 	StartedAt        *time.Time `json:"startedAt"`
 	EndedAt          *time.Time `json:"endedAt"`
@@ -137,7 +134,7 @@ type MeetingAttendance struct {
 	LeftAt          *time.Time     `json:"leftAt"`
 	DurationMinutes int            `json:"durationMinutes"`
 	IsPresent       bool           `json:"isPresent"`
-	Notes           sql.NullString `json:"-"`     // Exclude from JSON, use custom marshaling
+	Notes           sql.NullString `json:"-"` // Exclude from JSON, use custom marshaling
 	NotesString     string         `json:"notes"` // For JSON serialization
 	CreatedAt       time.Time      `json:"createdAt"`
 	UpdatedAt       time.Time      `json:"updatedAt"`
@@ -161,52 +158,39 @@ func (ma *MeetingAttendance) SetNotes(notes string) {
 	ma.NotesString = notes
 }
 
-// CreateVirtualMeeting creates a new virtual meeting with LiveKit room
+// CreateVirtualMeeting creates a new virtual meeting
 func (s *MeetingService) CreateVirtualMeeting(meeting *Meeting) error {
 	// Generate unique room name using the room generator
 	roomName := s.roomGenerator.GenerateRoomName(meeting.ChamaID, meeting.ID)
-	meeting.LiveKitRoomName = roomName
+	meeting.RoomName = roomName
 
 	log.Printf("Generated room name for meeting %s: %s", meeting.ID, roomName)
-
-	// Create LiveKit room if it's a virtual or hybrid meeting
-	if meeting.MeetingType == "virtual" || meeting.MeetingType == "hybrid" {
-		room, err := s.livekitService.CreateRoom(roomName, 50) // Max 50 participants
-		if err != nil {
-			return fmt.Errorf("failed to create LiveKit room: %w", err)
-		}
-		meeting.LiveKitRoomID = room.Sid
-	}
 
 	// Save meeting to database
 	query := `
 		INSERT INTO meetings (
 			id, chama_id, title, description, scheduled_at, duration, location,
-			meeting_url, meeting_type, livekit_room_name, livekit_room_id,
+			meeting_url, meeting_type, room_name,
 			status, recording_enabled, created_by, created_at, updated_at
-		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
+		) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
 	`
 
 	_, err := s.db.Exec(query,
 		meeting.ID, meeting.ChamaID, meeting.Title, meeting.Description,
 		meeting.ScheduledAt, meeting.Duration, meeting.Location,
-		meeting.MeetingURL, meeting.MeetingType, meeting.LiveKitRoomName,
-		meeting.LiveKitRoomID, meeting.Status, meeting.RecordingEnabled,
+		meeting.MeetingURL, meeting.MeetingType, meeting.RoomName,
+		meeting.Status, meeting.RecordingEnabled,
 		meeting.CreatedBy,
 	)
 	if err != nil {
-		// Clean up LiveKit room if database insert fails
-		if meeting.LiveKitRoomName != "" {
-			s.livekitService.DeleteRoom(meeting.LiveKitRoomName)
-		}
 		return fmt.Errorf("failed to save meeting: %w", err)
 	}
 
-	log.Printf("Created meeting: %s with LiveKit room: %s", meeting.ID, meeting.LiveKitRoomName)
+	log.Printf("Created meeting: %s with room: %s", meeting.ID, meeting.RoomName)
 	return nil
 }
 
-// CreateMeetingWithCalendar creates a new meeting with LiveKit room and Google Calendar integration
+// CreateMeetingWithCalendar creates a new meeting with Google Calendar integration
 func (s *MeetingService) CreateMeetingWithCalendar(meeting *Meeting, attendeeEmails []string, calendarID string) error {
 	// First create the virtual meeting
 	err := s.CreateVirtualMeeting(meeting)
@@ -309,13 +293,7 @@ func (s *MeetingService) EndMeeting(meetingID string) error {
 		return fmt.Errorf("meeting not found")
 	}
 
-	// Delete LiveKit room if it exists
-	if meeting.LiveKitRoomName != "" {
-		err = s.livekitService.DeleteRoom(meeting.LiveKitRoomName)
-		if err != nil {
-			log.Printf("Warning: failed to delete LiveKit room %s: %v", meeting.LiveKitRoomName, err)
-		}
-	}
+	// No LiveKit room to delete
 
 	log.Printf("Ended meeting: %s", meetingID)
 	return nil
@@ -327,7 +305,7 @@ func (s *MeetingService) GetMeeting(meetingID string) (*Meeting, error) {
 
 	query := `
 		SELECT id, chama_id, title, description, scheduled_at, duration, location,
-			   meeting_url, meeting_type, livekit_room_name, livekit_room_id,
+			   meeting_url, meeting_type, room_name,
 			   status, started_at, ended_at, recording_enabled, recording_url,
 			   transcript_url, created_by, created_at, updated_at
 		FROM meetings
@@ -338,13 +316,13 @@ func (s *MeetingService) GetMeeting(meetingID string) (*Meeting, error) {
 
 	meeting := &Meeting{}
 	var startedAt, endedAt sql.NullTime
-	var recordingURL, transcriptURL, livekitRoomName, livekitRoomID sql.NullString
+	var recordingURL, transcriptURL, roomName sql.NullString
 
 	err := row.Scan(
 		&meeting.ID, &meeting.ChamaID, &meeting.Title, &meeting.Description,
 		&meeting.ScheduledAt, &meeting.Duration, &meeting.Location,
-		&meeting.MeetingURL, &meeting.MeetingType, &livekitRoomName,
-		&livekitRoomID, &meeting.Status, &startedAt, &endedAt,
+		&meeting.MeetingURL, &meeting.MeetingType, &roomName,
+		&meeting.Status, &startedAt, &endedAt,
 		&meeting.RecordingEnabled, &recordingURL, &transcriptURL,
 		&meeting.CreatedBy, &meeting.CreatedAt, &meeting.UpdatedAt,
 	)
@@ -372,38 +350,30 @@ func (s *MeetingService) GetMeeting(meetingID string) (*Meeting, error) {
 	if transcriptURL.Valid {
 		meeting.TranscriptURL = &transcriptURL.String
 	}
-	if livekitRoomName.Valid {
-		meeting.LiveKitRoomName = livekitRoomName.String
-	}
-	if livekitRoomID.Valid {
-		meeting.LiveKitRoomID = livekitRoomID.String
+	if roomName.Valid {
+		meeting.RoomName = roomName.String
 	}
 
 	return meeting, nil
 }
 
-// GenerateJoinToken generates a LiveKit access token for a user to join a meeting
+// GenerateJoinToken generates an access token for a user to join a meeting
 func (s *MeetingService) GenerateJoinToken(meetingID, userID, userRole string) (string, error) {
 	meeting, err := s.GetMeeting(meetingID)
 	if err != nil {
 		return "", err
 	}
 
-	if meeting.LiveKitRoomName == "" {
-		return "", fmt.Errorf("meeting does not have a LiveKit room")
+	if meeting.RoomName == "" {
+		return "", fmt.Errorf("meeting does not have a room")
 	}
 
 	// Generate participant name (you might want to get actual user name from database)
 	participantName := fmt.Sprintf("user_%s", userID)
+	_ = participantName // Mark as used to avoid compiler warning
 
-	token, err := s.livekitService.GenerateAccessToken(
-		meeting.LiveKitRoomName,
-		participantName,
-		userRole,
-	)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate join token: %w", err)
-	}
+	// For now, return a simple token - this can be replaced with JWT or other auth mechanism
+	token := fmt.Sprintf("token_%s_%s_%s", meetingID, userID, userRole)
 
 	return token, nil
 }
@@ -420,20 +390,17 @@ func (s *MeetingService) GeneratePreviewToken(meetingID, userID, userRole string
 		return "", fmt.Errorf("only chairpersons and secretaries can preview meetings")
 	}
 
-	// For physical meetings, we don't need LiveKit tokens
+	// For physical meetings, we don't need tokens
 	if meeting.MeetingType == "physical" {
-		return "", fmt.Errorf("physical meetings do not require LiveKit tokens")
+		return "", fmt.Errorf("physical meetings do not require tokens")
 	}
 
-	if meeting.LiveKitRoomName == "" {
-		return "", fmt.Errorf("meeting does not have a LiveKit room")
+	if meeting.RoomName == "" {
+		return "", fmt.Errorf("meeting does not have a room")
 	}
 
 	// Generate preview token with admin privileges
-	token, err := s.livekitService.GenerateAccessToken(meeting.LiveKitRoomName, userID, userRole)
-	if err != nil {
-		return "", fmt.Errorf("failed to generate preview token: %w", err)
-	}
+	token := fmt.Sprintf("preview_token_%s_%s_%s", meetingID, userID, userRole)
 
 	log.Printf("Generated preview token for user %s (role: %s) in meeting %s", userID, userRole, meetingID)
 	return token, nil
@@ -463,65 +430,39 @@ func (s *MeetingService) GetMeetingPreviewInfo(meetingID, userID, userRole strin
 	// Handle different meeting types
 	switch meeting.MeetingType {
 	case "virtual", "hybrid":
-		// For virtual/hybrid meetings, check if LiveKit room exists
-		if meeting.LiveKitRoomName == "" {
-			// Create LiveKit room on-demand for preview using room generator
+		// For virtual/hybrid meetings, check if room exists
+		if meeting.RoomName == "" {
+			// Create room on-demand for preview using room generator
 			roomName := s.roomGenerator.GenerateRoomName(meeting.ChamaID, meeting.ID)
 			log.Printf("Generating room name for preview: %s", roomName)
-			room, err := s.livekitService.CreateRoom(roomName, 50)
+
+			// Update meeting with room info
+			meeting.RoomName = roomName
+
+			// Update database with room info
+			updateQuery := `
+				UPDATE meetings
+				SET room_name = ?, updated_at = CURRENT_TIMESTAMP
+				WHERE id = ?
+			`
+			_, err = s.db.Exec(updateQuery, roomName, meeting.ID)
 			if err != nil {
-				log.Printf("Warning: Failed to create LiveKit room for preview: %v", err)
-				// Fallback to basic virtual meeting preview without LiveKit
-				previewInfo["meetingType"] = "virtual"
-				previewInfo["previewMessage"] = "This is a virtual meeting. LiveKit room will be created when the meeting starts."
-				previewInfo["meetingUrl"] = meeting.MeetingURL
-				previewInfo["fallbackMode"] = true
-			} else {
-				// Update meeting with LiveKit room info
-				meeting.LiveKitRoomName = roomName
-				meeting.LiveKitRoomID = room.Sid
-
-				// Update database with LiveKit room info
-				updateQuery := `
-					UPDATE meetings
-					SET livekit_room_name = ?, livekit_room_id = ?, updated_at = CURRENT_TIMESTAMP
-					WHERE id = ?
-				`
-				_, err = s.db.Exec(updateQuery, roomName, room.Sid, meeting.ID)
-				if err != nil {
-					log.Printf("Warning: Failed to update meeting with LiveKit room info: %v", err)
-				}
-
-				// Generate preview token using the room name directly
-				token, err := s.livekitService.GenerateAccessToken(roomName, userID, userRole)
-				if err != nil {
-					log.Printf("Warning: Failed to generate preview token: %v", err)
-					return nil, fmt.Errorf("failed to generate preview token: %w", err)
-				}
-
-				// Get LiveKit WebSocket URL
-				wsURL := s.livekitService.GetWSURL()
-
-				previewInfo["accessToken"] = token
-				previewInfo["wsURL"] = wsURL
-				previewInfo["roomName"] = meeting.LiveKitRoomName
-				previewInfo["meetingType"] = "virtual"
-			}
-		} else {
-			// LiveKit room already exists
-			// Generate preview token using the existing room name
-			token, err := s.livekitService.GenerateAccessToken(meeting.LiveKitRoomName, userID, userRole)
-			if err != nil {
-				log.Printf("Warning: Failed to generate preview token for existing room: %v", err)
-				return nil, fmt.Errorf("failed to generate preview token: %w", err)
+				log.Printf("Warning: Failed to update meeting with room info: %v", err)
 			}
 
-			// Get LiveKit WebSocket URL
-			wsURL := s.livekitService.GetWSURL()
+			// Generate preview token using the room name directly
+			token := fmt.Sprintf("preview_token_%s_%s_%s", meeting.ID, userID, userRole)
 
 			previewInfo["accessToken"] = token
-			previewInfo["wsURL"] = wsURL
-			previewInfo["roomName"] = meeting.LiveKitRoomName
+			previewInfo["roomName"] = meeting.RoomName
+			previewInfo["meetingType"] = "virtual"
+		} else {
+			// Room already exists
+			// Generate preview token using the existing room name
+			token := fmt.Sprintf("preview_token_%s_%s_%s", meeting.ID, userID, userRole)
+
+			previewInfo["accessToken"] = token
+			previewInfo["roomName"] = meeting.RoomName
 			previewInfo["meetingType"] = "virtual"
 		}
 
@@ -622,7 +563,7 @@ func (s *MeetingService) EnsureVirtualMeetingsHaveRoomNames() error {
 		SELECT id, chama_id, title, meeting_type
 		FROM meetings
 		WHERE (meeting_type = 'virtual' OR meeting_type = 'hybrid')
-		AND (livekit_room_name IS NULL OR livekit_room_name = '')
+		AND (room_name IS NULL OR room_name = '')
 	`
 
 	rows, err := s.db.Query(query)
@@ -646,7 +587,7 @@ func (s *MeetingService) EnsureVirtualMeetingsHaveRoomNames() error {
 		// Update the meeting with the room name
 		updateQuery := `
 			UPDATE meetings
-			SET livekit_room_name = ?, updated_at = CURRENT_TIMESTAMP
+			SET room_name = ?, updated_at = CURRENT_TIMESTAMP
 			WHERE id = ?
 		`
 
@@ -673,9 +614,9 @@ type JitsiRoomData struct {
 	DisplayName  string `json:"displayName"`
 	UserEmail    string `json:"userEmail"`
 	// JaaS fields
-	Domain string `json:"domain,omitempty"`
-	AppID  string `json:"appId,omitempty"`
-	JWT    string `json:"jwt,omitempty"`
+	Domain       string `json:"domain,omitempty"`
+	AppID        string `json:"appId,omitempty"`
+	JWT          string `json:"jwt,omitempty"`
 }
 
 // GenerateJitsiRoomData generates Jitsi Meet room data for a user to join a meeting
@@ -720,7 +661,7 @@ func (s *MeetingService) GenerateJitsiRoomData(meetingID, userID, userRole strin
 	}
 
 	// Generate secure room name if not already set
-	roomName := meeting.LiveKitRoomName // Reuse the room name field
+	roomName := meeting.RoomName // Reuse the room name field
 	if roomName == "" {
 		// Generate highly secure room name with chama isolation
 		timestamp := time.Now().Unix()
@@ -729,7 +670,7 @@ func (s *MeetingService) GenerateJitsiRoomData(meetingID, userID, userRole strin
 			meeting.ChamaID, meeting.ID, timestamp, randomSuffix)
 
 		// Update the meeting with the room name
-		updateQuery := `UPDATE meetings SET livekit_room_name = ? WHERE id = ?`
+		updateQuery := `UPDATE meetings SET room_name = ? WHERE id = ?`
 		_, err = s.db.Exec(updateQuery, roomName, meetingID)
 		if err != nil {
 			log.Printf("Warning: Failed to update meeting with room name: %v", err)
@@ -783,58 +724,58 @@ func (s *MeetingService) GenerateJitsiRoomData(meetingID, userID, userRole strin
 
 // generateJaaSJWT builds a signed RS256 token for Jitsi as a Service
 func (s *MeetingService) generateJaaSJWT(appID, kid, roomName, displayName, email string, isModerator bool, userID string) (string, error) {
-	// Parse RSA private key
-	block, _ := pem.Decode([]byte(os.Getenv("JITSI_PRIVATE_KEY_PEM")))
-	if block == nil {
-		return "", fmt.Errorf("invalid JITSI_PRIVATE_KEY_PEM")
-	}
-	pk, err := x509.ParsePKCS8PrivateKey(block.Bytes)
-	if err != nil {
-		// try PKCS1
-		if rsaKey, err2 := x509.ParsePKCS1PrivateKey(block.Bytes); err2 == nil {
-			pk = rsaKey
-		} else {
-			return "", fmt.Errorf("failed to parse private key: %w", err)
-		}
-	}
+    // Parse RSA private key
+    block, _ := pem.Decode([]byte(os.Getenv("JITSI_PRIVATE_KEY_PEM")))
+    if block == nil {
+        return "", fmt.Errorf("invalid JITSI_PRIVATE_KEY_PEM")
+    }
+    pk, err := x509.ParsePKCS8PrivateKey(block.Bytes)
+    if err != nil {
+        // try PKCS1
+        if rsaKey, err2 := x509.ParsePKCS1PrivateKey(block.Bytes); err2 == nil {
+            pk = rsaKey
+        } else {
+            return "", fmt.Errorf("failed to parse private key: %w", err)
+        }
+    }
 
-	now := time.Now()
-	claims := jwt.MapClaims{
-		"aud":  "jitsi",
-		"iss":  "chat",
-		"sub":  appID,
-		"room": "*",
-		"nbf":  now.Unix(),
-		"exp":  now.Add(4 * time.Hour).Unix(),
-		"context": map[string]interface{}{
-			"user": map[string]interface{}{
-				"id":        userID,
-				"name":      displayName,
-				"email":     email,
-				"moderator": isModerator,
-			},
-			"features": map[string]interface{}{
-				"livestreaming": false,
-				"recording":     false,
-				"transcription": false,
-				"outbound-call": false,
-				"inbound-call":  false,
-				"file-upload":   false,
-				"list-visitors": false,
-			},
-			"room": map[string]interface{}{
-				"regex": false,
-			},
-		},
-	}
+    now := time.Now()
+    claims := jwt.MapClaims{
+        "aud": "jitsi",
+        "iss": "chat",
+        "sub": appID,
+        "room": "*",
+        "nbf": now.Unix(),
+        "exp": now.Add(4 * time.Hour).Unix(),
+        "context": map[string]interface{}{
+            "user": map[string]interface{}{
+                "id":        userID,
+                "name":      displayName,
+                "email":     email,
+                "moderator": isModerator,
+            },
+            "features": map[string]interface{}{
+                "livestreaming":   false,
+                "recording":       false,
+                "transcription":   false,
+                "outbound-call":   false,
+                "inbound-call":    false,
+                "file-upload":     false,
+                "list-visitors":   false,
+            },
+            "room": map[string]interface{}{
+                "regex": false,
+            },
+        },
+    }
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
-	token.Header["kid"] = kid
-	signed, err := token.SignedString(pk)
-	if err != nil {
-		return "", err
-	}
-	return signed, nil
+    token := jwt.NewWithClaims(jwt.SigningMethodRS256, claims)
+    token.Header["kid"] = kid
+    signed, err := token.SignedString(pk)
+    if err != nil {
+        return "", err
+    }
+    return signed, nil
 }
 
 // generateJitsiRoomPassword generates a secure room password

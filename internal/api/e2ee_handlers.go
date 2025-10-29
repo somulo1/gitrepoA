@@ -22,14 +22,14 @@ func RegisterDevice(c *gin.Context) {
 	}
 
 	var req struct {
-		DeviceName      string `json:"deviceName" binding:"required"`
-		DeviceType      string `json:"deviceType" binding:"required"`
-		RegistrationID  int64  `json:"registrationId" binding:"required"`
-		IdentityKey     string `json:"identityKey" binding:"required"`
-		SignedPreKey    string `json:"signedPreKey" binding:"required"`
-		SignedPreKeyID  int64  `json:"signedPreKeyId" binding:"required"`
-		SignedPreKeySig string `json:"signedPreKeySignature" binding:"required"`
-		PreKeys         []struct {
+		DeviceName         string `json:"deviceName" binding:"required"`
+		DeviceType         string `json:"deviceType" binding:"required"`
+		RegistrationID     int64  `json:"registrationId" binding:"required"`
+		IdentityKey        string `json:"identityKey" binding:"required"`
+		SignedPreKey       string `json:"signedPreKey" binding:"required"`
+		SignedPreKeyID     int64  `json:"signedPreKeyId" binding:"required"`
+		SignedPreKeySig    string `json:"signedPreKeySignature" binding:"required"`
+		PreKeys           []struct {
 			ID  int64  `json:"id"`
 			Key string `json:"key"`
 		} `json:"preKeys" binding:"required"`
@@ -49,19 +49,19 @@ func RegisterDevice(c *gin.Context) {
 	// Store device
 	device := &services.Device{
 		ID:             uuid.New().String(),
-		UserID:         userID,
-		DeviceID:       int(deviceID),
-		DeviceName:     req.DeviceName,
-		DeviceType:     req.DeviceType,
+		UserID:        userID,
+		DeviceID:      int(deviceID),
+		DeviceName:    req.DeviceName,
+		DeviceType:    req.DeviceType,
 		RegistrationID: req.RegistrationID,
 		SignedPreKeyID: req.SignedPreKeyID,
-		IsActive:       true,
+		IsActive:      true,
 	}
 
 	// Store identity key
 	identityKey := &services.SignalIdentityKey{
-		UserID:    userID,
-		DeviceID:  int(deviceID),
+		UserID:   userID,
+		DeviceID: int(deviceID),
 		PublicKey: req.IdentityKey,
 	}
 
@@ -78,9 +78,9 @@ func RegisterDevice(c *gin.Context) {
 	var preKeys []*services.SignalPreKey
 	for _, pk := range req.PreKeys {
 		preKeys = append(preKeys, &services.SignalPreKey{
-			UserID:    userID,
-			DeviceID:  int(deviceID),
-			PreKeyID:  pk.ID,
+			UserID:   userID,
+			DeviceID: int(deviceID),
+			PreKeyID: pk.ID,
 			PublicKey: pk.Key,
 		})
 	}
@@ -167,7 +167,7 @@ func UploadPreKeys(c *gin.Context) {
 
 	var req struct {
 		DeviceID int `json:"deviceId" binding:"required"`
-		PreKeys  []struct {
+		PreKeys []struct {
 			ID  int64  `json:"id"`
 			Key string `json:"key"`
 		} `json:"preKeys" binding:"required"`
@@ -196,9 +196,9 @@ func UploadPreKeys(c *gin.Context) {
 	var preKeys []*services.SignalPreKey
 	for _, pk := range req.PreKeys {
 		preKeys = append(preKeys, &services.SignalPreKey{
-			UserID:    userID,
-			DeviceID:  req.DeviceID,
-			PreKeyID:  pk.ID,
+			UserID:   userID,
+			DeviceID: req.DeviceID,
+			PreKeyID: pk.ID,
 			PublicKey: pk.Key,
 		})
 	}
@@ -277,10 +277,10 @@ func SendE2EEMessage(c *gin.Context) {
 	}
 
 	var req struct {
-		RecipientID string `json:"recipientId" binding:"required"`
-		DeviceID    int    `json:"deviceId" binding:"required"`
-		Ciphertext  string `json:"ciphertext" binding:"required"`
-		MessageType string `json:"messageType"`
+		RecipientID   string `json:"recipientId" binding:"required"`
+		DeviceID      int    `json:"deviceId" binding:"required"`
+		Ciphertext    string `json:"ciphertext" binding:"required"`
+		MessageType   string `json:"messageType"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {

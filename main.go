@@ -785,14 +785,12 @@ func main() {
 				meetings.GET("/", api.GetMeetings)
 				meetings.GET("/user", api.GetUserMeetings) // Get all meetings for the current user
 				meetings.POST("/", api.CreateMeeting)
-				meetings.POST("/livekit", api.CreateMeetingWithLiveKit)   // New LiveKit-enabled meeting creation
 				meetings.POST("/calendar", api.CreateMeetingWithCalendar) // New meeting with calendar integration
 				meetings.GET("/:id", api.GetMeeting)
 				meetings.PUT("/:id", api.UpdateMeeting)
 				meetings.PATCH("/:id", api.UpdateMeeting) // Support PATCH requests for meeting updates
 				meetings.DELETE("/:id", api.DeleteMeeting)
 				meetings.POST("/:id/join", api.JoinMeeting)
-				meetings.POST("/:id/join-livekit", api.JoinMeetingWithLiveKit)          // New LiveKit join endpoint
 				meetings.POST("/:id/join-jitsi", api.JoinMeetingWithJitsi)              // New Jitsi Meet join endpoint
 				meetings.GET("/:id/preview", api.PreviewMeeting)                        // New meeting preview for chairperson/secretary
 				meetings.POST("/:id/start", api.StartMeeting)                           // New start meeting endpoint
@@ -807,7 +805,6 @@ func main() {
 				meetings.GET("/:id/minutes", api.GetMeetingMinutes)                     // Get meeting minutes/notes
 				meetings.GET("/:id/calendar/add-url", api.GetGoogleCalendarAddEventURL) // Get Google Calendar add-event URL
 				meetings.POST("/:id/calendar/create", api.CreateGoogleCalendarEvent)    // Create calendar event with reminders
-				meetings.GET("/test-livekit", api.TestLiveKitConnection)                // Test LiveKit configuration
 			}
 
 			// Merry-Go-Round routes

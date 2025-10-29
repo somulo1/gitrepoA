@@ -198,9 +198,9 @@ func (h *AccountHandlers) GetTransparencyFeed(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"data": map[string]interface{}{
-			"transactions":      transactions,
+			"transactions":     transactions,
 			"totalTransactions": len(transactions),
-			"totalAmount":       totalAmount,
+			"totalAmount":      totalAmount,
 		},
 	})
 }
@@ -262,7 +262,7 @@ func (h *AccountHandlers) GetAccountNotifications(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
-		"data":    notifications,
+		"data": notifications,
 	})
 }
 

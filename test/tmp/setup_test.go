@@ -2,8 +2,8 @@ package test
 
 import (
 	"database/sql"
-	"encoding/json"
 	"fmt"
+	"encoding/json"
 	"testing"
 
 	"github.com/gin-gonic/gin"
@@ -423,7 +423,7 @@ func setupTestRouter() *gin.Engine {
 
 		// Notification routes
 		apiGroup.GET("/notifications", api.GetNotifications)
-
+		
 		// Loan routes
 		apiGroup.GET("/loan-applications", api.GetLoanApplications)
 		apiGroup.POST("/loan-applications", api.CreateLoanApplication)

@@ -18,14 +18,14 @@ type PasswordResetService struct {
 
 // PasswordResetToken represents a password reset token
 type PasswordResetToken struct {
-	ID         string    `json:"id" db:"id"`
-	UserID     string    `json:"userId" db:"user_id"`
-	Token      string    `json:"token" db:"token"`
-	ExpiresAt  time.Time `json:"expiresAt" db:"expires_at"`
-	Used       bool      `json:"used" db:"used"`
-	CreatedAt  time.Time `json:"createdAt" db:"created_at"`
-	TrialCount int       `json:"trialCount" db:"trial_count"`
-	SessionID  string    `json:"sessionId" db:"session_id"`
+	ID           string    `json:"id" db:"id"`
+	UserID       string    `json:"userId" db:"user_id"`
+	Token        string    `json:"token" db:"token"`
+	ExpiresAt    time.Time `json:"expiresAt" db:"expires_at"`
+	Used         bool      `json:"used" db:"used"`
+	CreatedAt    time.Time `json:"createdAt" db:"created_at"`
+	TrialCount   int       `json:"trialCount" db:"trial_count"`
+	SessionID    string    `json:"sessionId" db:"session_id"`
 }
 
 // NewPasswordResetService creates a new password reset service
@@ -66,7 +66,7 @@ func (s *PasswordResetService) InitializePasswordResetTable() error {
 		if err != nil {
 			// Ignore "duplicate column name" errors - column already exists
 			if !strings.Contains(err.Error(), "duplicate column name") &&
-				!strings.Contains(err.Error(), "already exists") {
+			   !strings.Contains(err.Error(), "already exists") {
 				fmt.Printf("Warning: Failed to add column to password_reset_tokens: %v\n", err)
 			}
 		}

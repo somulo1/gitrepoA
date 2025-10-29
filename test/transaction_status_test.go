@@ -19,16 +19,16 @@ func updateTransactionStatus(db *sql.DB, transactionID string, status models.Tra
 	if err != nil {
 		return fmt.Errorf("failed to update transaction status: %w", err)
 	}
-
+	
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		return fmt.Errorf("failed to get rows affected: %w", err)
 	}
-
+	
 	if rowsAffected == 0 {
 		return fmt.Errorf("transaction not found: %s", transactionID)
 	}
-
+	
 	log.Printf("Successfully updated transaction %s status to %s", transactionID, status)
 	return nil
 }

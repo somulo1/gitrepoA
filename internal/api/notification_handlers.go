@@ -1701,6 +1701,7 @@ func SendSystemNotification(c *gin.Context) {
 	})
 }
 
+
 // RejectChamaInvitation handles rejecting a chama invitation
 func RejectChamaInvitation(c *gin.Context) {
 	userID := c.GetString("userID")

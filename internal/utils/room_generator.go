@@ -23,15 +23,15 @@ func (g *RoomNameGenerator) GenerateRoomName(chamaID, meetingID string) string {
 	// Clean the IDs to ensure they're safe for room names
 	cleanChamaID := g.cleanID(chamaID)
 	cleanMeetingID := g.cleanID(meetingID)
-
+	
 	// Add timestamp for uniqueness
 	timestamp := time.Now().Unix()
-
+	
 	roomName := fmt.Sprintf("chama_%s_meeting_%s_%d", cleanChamaID, cleanMeetingID, timestamp)
-
+	
 	// Ensure the room name is valid (alphanumeric, hyphens, underscores only)
 	roomName = g.sanitizeRoomName(roomName)
-
+	
 	return roomName
 }
 
@@ -43,18 +43,18 @@ func (g *RoomNameGenerator) GenerateShortRoomName(chamaID, meetingID string) str
 	if len(shortChamaID) > 8 {
 		shortChamaID = shortChamaID[:8]
 	}
-
+	
 	// Take first 8 characters of meeting ID
 	shortMeetingID := g.cleanID(meetingID)
 	if len(shortMeetingID) > 8 {
 		shortMeetingID = shortMeetingID[:8]
 	}
-
+	
 	// Generate random suffix for uniqueness
 	randomSuffix := g.generateRandomString(6)
-
+	
 	roomName := fmt.Sprintf("chama_%s_%s_%s", shortChamaID, shortMeetingID, randomSuffix)
-
+	
 	return g.sanitizeRoomName(roomName)
 }
 
@@ -64,12 +64,12 @@ func (g *RoomNameGenerator) GenerateUserFriendlyRoomName(chamaName, meetingTitle
 	// Clean and truncate names
 	cleanChamaName := g.cleanAndTruncate(chamaName, 15)
 	cleanMeetingTitle := g.cleanAndTruncate(meetingTitle, 20)
-
+	
 	// Format date as YYYYMMDD
 	dateStr := meetingDate.Format("20060102")
-
+	
 	roomName := fmt.Sprintf("%s_%s_%s", cleanChamaName, cleanMeetingTitle, dateStr)
-
+	
 	return g.sanitizeRoomName(roomName)
 }
 
@@ -79,12 +79,12 @@ func (g *RoomNameGenerator) GetRoomNameFromMeeting(chamaID, meetingID, chamaName
 	if existingRoomName != "" && g.isValidRoomName(existingRoomName) {
 		return existingRoomName
 	}
-
+	
 	// Try to generate user-friendly name first
 	if chamaName != "" && meetingTitle != "" {
 		return g.GenerateUserFriendlyRoomName(chamaName, meetingTitle, meetingDate)
 	}
-
+	
 	// Fallback to short room name
 	return g.GenerateShortRoomName(chamaID, meetingID)
 }
@@ -94,18 +94,18 @@ func (g *RoomNameGenerator) cleanID(id string) string {
 	// Remove common prefixes
 	id = strings.TrimPrefix(id, "meeting-")
 	id = strings.TrimPrefix(id, "chama-")
-
+	
 	// Keep only alphanumeric characters and hyphens
 	reg := regexp.MustCompile(`[^a-zA-Z0-9\-]`)
 	cleaned := reg.ReplaceAllString(id, "")
-
+	
 	// Remove consecutive hyphens
 	reg = regexp.MustCompile(`-+`)
 	cleaned = reg.ReplaceAllString(cleaned, "-")
-
+	
 	// Trim hyphens from start and end
 	cleaned = strings.Trim(cleaned, "-")
-
+	
 	return cleaned
 }
 
@@ -114,28 +114,28 @@ func (g *RoomNameGenerator) cleanAndTruncate(str string, maxLength int) string {
 	// Convert to lowercase and replace spaces with underscores
 	cleaned := strings.ToLower(str)
 	cleaned = strings.ReplaceAll(cleaned, " ", "_")
-
+	
 	// Remove special characters except underscores and hyphens
 	reg := regexp.MustCompile(`[^a-z0-9_\-]`)
 	cleaned = reg.ReplaceAllString(cleaned, "")
-
+	
 	// Remove consecutive underscores/hyphens
 	reg = regexp.MustCompile(`[_\-]+`)
 	cleaned = reg.ReplaceAllString(cleaned, "_")
-
+	
 	// Trim underscores from start and end
 	cleaned = strings.Trim(cleaned, "_-")
-
+	
 	// Truncate if too long
 	if len(cleaned) > maxLength {
 		cleaned = cleaned[:maxLength]
 	}
-
+	
 	// Ensure it's not empty
 	if cleaned == "" {
 		cleaned = "meeting"
 	}
-
+	
 	return cleaned
 }
 
@@ -144,24 +144,24 @@ func (g *RoomNameGenerator) sanitizeRoomName(roomName string) string {
 	// LiveKit room names should be alphanumeric with underscores and hyphens
 	reg := regexp.MustCompile(`[^a-zA-Z0-9_\-]`)
 	sanitized := reg.ReplaceAllString(roomName, "_")
-
+	
 	// Remove consecutive underscores
 	reg = regexp.MustCompile(`_+`)
 	sanitized = reg.ReplaceAllString(sanitized, "_")
-
+	
 	// Trim underscores from start and end
 	sanitized = strings.Trim(sanitized, "_-")
-
+	
 	// Ensure minimum length
 	if len(sanitized) < 3 {
 		sanitized = sanitized + "_room"
 	}
-
+	
 	// Ensure maximum length (LiveKit has limits)
 	if len(sanitized) > 63 {
 		sanitized = sanitized[:63]
 	}
-
+	
 	return sanitized
 }
 
@@ -170,12 +170,12 @@ func (g *RoomNameGenerator) isValidRoomName(roomName string) bool {
 	if roomName == "" {
 		return false
 	}
-
+	
 	// Check length
 	if len(roomName) < 1 || len(roomName) > 63 {
 		return false
 	}
-
+	
 	// Check characters (alphanumeric, underscores, hyphens only)
 	reg := regexp.MustCompile(`^[a-zA-Z0-9_\-]+$`)
 	return reg.MatchString(roomName)
@@ -185,12 +185,12 @@ func (g *RoomNameGenerator) isValidRoomName(roomName string) bool {
 func (g *RoomNameGenerator) generateRandomString(length int) string {
 	const charset = "abcdefghijklmnopqrstuvwxyz0123456789"
 	result := make([]byte, length)
-
+	
 	for i := range result {
 		num, _ := rand.Int(rand.Reader, big.NewInt(int64(len(charset))))
 		result[i] = charset[num.Int64()]
 	}
-
+	
 	return string(result)
 }
 
