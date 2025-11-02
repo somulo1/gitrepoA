@@ -111,7 +111,7 @@ func main() {
 			"http://localhost:8081",           // Metro / Expo
 			"http://127.0.0.1:8081",
 			"http://localhost:8080", 
-			"https://vault-oejp.vercel.app/",
+			"https://vault-better1.vercel.app",
 			"http://localhost:19006", // Expo web preview
 			"http://127.0.0.1:19006",
 			"http://localhost:3000",
