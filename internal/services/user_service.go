@@ -184,8 +184,8 @@ func (s *UserService) GetUserByID(userID string) (*models.User, error) {
 	query := `
 		SELECT id, email, phone, first_name, last_name, avatar, role, status,
 			   is_email_verified, is_phone_verified, language, theme, county, town,
-			   latitude, longitude, business_type, business_description, gender, rating,
-			   total_ratings, created_at, updated_at
+			   latitude, longitude, business_type, business_description, bio, occupation,
+			   date_of_birth, gender, rating, total_ratings, created_at, updated_at
 		FROM users WHERE id = ?
 	`
 
@@ -195,8 +195,8 @@ func (s *UserService) GetUserByID(userID string) (*models.User, error) {
 		&user.Avatar, &user.Role, &user.Status, &user.IsEmailVerified,
 		&user.IsPhoneVerified, &user.Language, &user.Theme, &user.County,
 		&user.Town, &user.Latitude, &user.Longitude, &user.BusinessType,
-		&user.BusinessDescription, &user.Gender, &user.Rating, &user.TotalRatings,
-		&user.CreatedAt, &user.UpdatedAt,
+		&user.BusinessDescription, &user.Bio, &user.Occupation, &user.DateOfBirth,
+		&user.Gender, &user.Rating, &user.TotalRatings, &user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -229,8 +229,8 @@ func (s *UserService) GetUserByEmailOrPhone(identifier string) (*models.User, er
 	query := `
 		SELECT id, email, phone, first_name, last_name, password_hash, avatar, role, status,
 			   is_email_verified, is_phone_verified, language, theme, county, town,
-			   latitude, longitude, business_type, business_description, gender, rating,
-			   total_ratings, created_at, updated_at
+			   latitude, longitude, business_type, business_description, bio, occupation,
+			   date_of_birth, gender, rating, total_ratings, created_at, updated_at
 		FROM users WHERE (email = ? OR LOWER(TRIM(email)) = ?) OR phone = ?
 	`
 
@@ -240,8 +240,9 @@ func (s *UserService) GetUserByEmailOrPhone(identifier string) (*models.User, er
 		&user.PasswordHash, &user.Avatar, &user.Role, &user.Status,
 		&user.IsEmailVerified, &user.IsPhoneVerified, &user.Language, &user.Theme,
 		&user.County, &user.Town, &user.Latitude, &user.Longitude,
-		&user.BusinessType, &user.BusinessDescription, &user.Gender, &user.Rating,
-		&user.TotalRatings, &user.CreatedAt, &user.UpdatedAt,
+		&user.BusinessType, &user.BusinessDescription, &user.Bio, &user.Occupation,
+		&user.DateOfBirth, &user.Gender, &user.Rating, &user.TotalRatings,
+		&user.CreatedAt, &user.UpdatedAt,
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -409,15 +410,15 @@ func (s *UserService) UpdateUserStatus(userID string, status models.UserStatus) 
 // GetUsersByLocation gets users by location (county/town)
 func (s *UserService) GetUsersByLocation(county, town string, limit, offset int) ([]*models.User, error) {
 	query := `
-		SELECT id, email, phone, first_name, last_name, avatar, role, status,
-			   is_email_verified, is_phone_verified, language, theme, county, town,
-			   latitude, longitude, business_type, business_description, gender, rating,
-			   total_ratings, created_at, updated_at
-		FROM users
-		WHERE county = ? AND town = ? AND status = ?
-		ORDER BY created_at DESC
-		LIMIT ? OFFSET ?
-	`
+	SELECT id, email, phone, first_name, last_name, avatar, role, status,
+		   is_email_verified, is_phone_verified, language, theme, county, town,
+		   latitude, longitude, business_type, business_description, bio, occupation,
+		   date_of_birth, gender, rating, total_ratings, created_at, updated_at
+	FROM users
+	WHERE county = ? AND town = ? AND status = ?
+	ORDER BY created_at DESC
+	LIMIT ? OFFSET ?
+`
 
 	rows, err := s.db.Query(query, county, town, models.UserStatusActive, limit, offset)
 	if err != nil {
@@ -433,8 +434,8 @@ func (s *UserService) GetUsersByLocation(county, town string, limit, offset int)
 			&user.Avatar, &user.Role, &user.Status, &user.IsEmailVerified,
 			&user.IsPhoneVerified, &user.Language, &user.Theme, &user.County,
 			&user.Town, &user.Latitude, &user.Longitude, &user.BusinessType,
-			&user.BusinessDescription, &user.Gender, &user.Rating, &user.TotalRatings,
-			&user.CreatedAt, &user.UpdatedAt,
+			&user.BusinessDescription, &user.Bio, &user.Occupation, &user.DateOfBirth,
+			&user.Gender, &user.Rating, &user.TotalRatings, &user.CreatedAt, &user.UpdatedAt,
 		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to scan user: %w", err)

@@ -30,7 +30,7 @@ func (w *corsResponseWriter) WriteHeader(code int) {
 	// Ensure CORS headers are set for ALL responses, including redirects
 	w.Header().Set("Access-Control-Allow-Origin", w.origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "false")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token, X-File-Name, X-File-Size, X-Timezone, X-Language, X-Screen-Resolution, X-Device-Type, X-Device-Name, X-Browser-Name, X-OS-Name, X-Connection-Type")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Authorization, Content-Disposition")
 	w.Header().Set("Access-Control-Max-Age", "86400")
@@ -119,7 +119,7 @@ func main() {
 			"http://localhost:3000",
 		}
 
-		// Check if origin is allowed - be restrictive in production
+		// Check if origin is allowed - be restrictive in all environments
 		allowedOrigin := ""
 		if origin != "" {
 			for _, allowed := range allowedOrigins {
@@ -130,18 +130,13 @@ func main() {
 			}
 		}
 
-		// In production, only allow specific origins - no fallback to "*"
-		if allowedOrigin == "" && os.Getenv("ENVIRONMENT") == "production" {
-			log.Printf("🚫 CORS: Origin '%s' not allowed in production", origin)
+		// If origin is not in the allowed list, forbid the request
+		if allowedOrigin == "" {
+			log.Printf("🚫 CORS: Origin '%s' not allowed", origin)
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "Origin not allowed",
 			})
 			return
-		}
-
-		// For development, allow "*" if no specific match (for flexibility during development)
-		if allowedOrigin == "" && os.Getenv("ENVIRONMENT") != "production" {
-			allowedOrigin = "*"
 		}
 
 		// Log CORS processing for debugging
@@ -964,3 +959,4 @@ func main() {
 
 	log.Println("Server shutdown complete")
 }
+

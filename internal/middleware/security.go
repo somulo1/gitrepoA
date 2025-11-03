@@ -16,7 +16,6 @@ type SecurityConfig struct {
 	MaxRequestSize    int64
 	RateLimitRequests int
 	RateLimitWindow   time.Duration
-	AllowedOrigins    []string
 	RequireHTTPS      bool
 }
 
@@ -26,7 +25,6 @@ func DefaultSecurityConfig() *SecurityConfig {
 		MaxRequestSize:    10 * 1024 * 1024, // 10MB
 		RateLimitRequests: 10000,             // Very high for development
 		RateLimitWindow:   time.Minute,
-		AllowedOrigins:    []string{"*"}, // Configure properly in production
 		RequireHTTPS:      false,         // Set to true in production
 	}
 }
@@ -41,6 +39,7 @@ func SecurityMiddleware(config *SecurityConfig) gin.HandlerFunc {
 	limiters := make(map[string]*rate.Limiter)
 
 	return func(c *gin.Context) {
+
 		// 1. Request size validation
 		if c.Request.ContentLength > config.MaxRequestSize {
 			c.JSON(http.StatusRequestEntityTooLarge, gin.H{
@@ -62,11 +61,6 @@ func SecurityMiddleware(config *SecurityConfig) gin.HandlerFunc {
 
 			if !limiter.Allow() {
 				fmt.Printf("🚨 Rate limit exceeded for IP: %s, Path: %s %s\n", clientIP, c.Request.Method, c.Request.URL.Path)
-
-				// Set CORS headers even for rate limited responses
-				c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-				c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-				c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
 
 				c.JSON(http.StatusTooManyRequests, gin.H{
 					"success": false,
@@ -355,11 +349,6 @@ func AuthRateLimitMiddleware() gin.HandlerFunc {
 
 		if !limiter.Allow() {
 			fmt.Printf("🚨 Auth rate limit exceeded for IP: %s, Path: %s %s\n", clientIP, c.Request.Method, c.Request.URL.Path)
-
-			// Set CORS headers even for rate limited responses
-			c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
-			c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
-			c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
 
 			c.JSON(http.StatusTooManyRequests, gin.H{
 				"success": false,

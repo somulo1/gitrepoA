@@ -293,7 +293,7 @@ func (h *ReceiptHandlers) generateReceiptData(transaction *models.Transaction, u
 
 	companyInfo := CompanyInfo{
 		Name:    "VaultKe",
-		Address: "Nairobi, Kenya",
+		Address: "Kisumu, Kenya",
 		Phone:   "+254 700 000 000",
 		Email:   "support@vaultke.co.ke",
 		Website: "www.vaultke.co.ke",

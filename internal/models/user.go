@@ -42,23 +42,23 @@ type User struct {
 	FirstName           string     `json:"firstName" db:"first_name"`
 	LastName            string     `json:"lastName" db:"last_name"`
 	PasswordHash        string     `json:"-" db:"password_hash"`
-	Avatar              *string    `json:"avatar,omitempty" db:"avatar"`
+	Avatar              *string    `json:"avatar" db:"avatar"`
 	Role                UserRole   `json:"role" db:"role"`
 	Status              UserStatus `json:"status" db:"status"`
 	IsEmailVerified     bool       `json:"isEmailVerified" db:"is_email_verified"`
 	IsPhoneVerified     bool       `json:"isPhoneVerified" db:"is_phone_verified"`
 	Language            string     `json:"language" db:"language"`
 	Theme               string     `json:"theme" db:"theme"`
-	County              *string    `json:"county,omitempty" db:"county"`
-	Town                *string    `json:"town,omitempty" db:"town"`
-	Latitude            *float64   `json:"latitude,omitempty" db:"latitude"`
-	Longitude           *float64   `json:"longitude,omitempty" db:"longitude"`
-	BusinessType        *string    `json:"businessType,omitempty" db:"business_type"`
-	BusinessDescription *string    `json:"businessDescription,omitempty" db:"business_description"`
-	Bio                 *string    `json:"bio,omitempty" db:"bio"`
-	Occupation          *string    `json:"occupation,omitempty" db:"occupation"`
-	DateOfBirth         *string    `json:"dateOfBirth,omitempty" db:"date_of_birth"`
-	Gender              *string    `json:"gender,omitempty" db:"gender"`
+	County              *string    `json:"county" db:"county"`
+	Town                *string    `json:"town" db:"town"`
+	Latitude            *float64   `json:"latitude" db:"latitude"`
+	Longitude           *float64   `json:"longitude" db:"longitude"`
+	BusinessType        *string    `json:"businessType" db:"business_type"`
+	BusinessDescription *string    `json:"businessDescription" db:"business_description"`
+	Bio                 *string    `json:"bio" db:"bio"`
+	Occupation          *string    `json:"occupation" db:"occupation"`
+	DateOfBirth         *string    `json:"dateOfBirth" db:"date_of_birth"`
+	Gender              *string    `json:"gender" db:"gender"`
 	Rating              float64    `json:"rating" db:"rating"`
 	TotalRatings        int        `json:"totalRatings" db:"total_ratings"`
 	CreatedAt           time.Time  `json:"createdAt" db:"created_at"`
