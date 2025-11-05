@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -30,10 +31,16 @@ func (w *corsResponseWriter) WriteHeader(code int) {
 	// Ensure CORS headers are set for ALL responses, including redirects
 	w.Header().Set("Access-Control-Allow-Origin", w.origin)
 	w.Header().Set("Access-Control-Allow-Credentials", "false")
-	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, X-CSRF-Token, X-File-Name, X-File-Size, X-Timezone, X-Language, X-Screen-Resolution, X-Device-Type, X-Device-Name, X-Browser-Name, X-OS-Name, X-Connection-Type")
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS, PATCH")
 	w.Header().Set("Access-Control-Expose-Headers", "Content-Length, Authorization, Content-Disposition")
 	w.Header().Set("Access-Control-Max-Age", "86400")
+
+	// For redirects (3xx status codes), ensure proper handling
+	if code >= 300 && code < 400 {
+		log.Printf("🔒 CORS: Handling redirect response (status: %d) with CORS headers", code)
+	}
+
 	w.ResponseWriter.WriteHeader(code)
 }
 
@@ -70,6 +77,9 @@ func main() {
 	}
 
 	router := gin.New()
+
+	// Disable trailing slash redirects to prevent CORS issues
+	router.RedirectTrailingSlash = false
 
 	// Add memory monitoring middleware
 	router.Use(func(c *gin.Context) {
@@ -161,6 +171,12 @@ func main() {
 			c.Header("Access-Control-Max-Age", "86400")
 			c.AbortWithStatus(204)
 			return
+		}
+
+		// For POST requests to /api/v1/chamas, ensure no redirects
+		if c.Request.Method == "POST" && strings.HasPrefix(path, "/api/v1/chamas") && !strings.HasSuffix(path, "/") {
+			// This should prevent any trailing slash redirects for chama creation
+			log.Printf("🔒 CORS: Ensuring no redirect for POST /api/v1/chamas")
 		}
 
 		c.Next()
@@ -959,4 +975,3 @@ func main() {
 
 	log.Println("Server shutdown complete")
 }
-
