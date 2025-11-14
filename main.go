@@ -140,14 +140,18 @@ func main() {
 			}
 		}
 
+		if origin == "" || origin == "null" {
+            allowedOrigin = "*" // safe for mobile dev
+        }
+
 		// If origin is not in the allowed list, forbid the request
-		if allowedOrigin == "" {
+		/*if allowedOrigin == "" {
 			log.Printf("🚫 CORS: Origin '%s' not allowed", origin)
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 				"error": "Origin not allowed",
 			})
 			return
-		}
+		}*/
 
 		// Log CORS processing for debugging
 		log.Printf("🔒 CORS: Origin=%s, Method=%s, Path=%s, AllowedOrigin=%s", origin, method, path, allowedOrigin)
